@@ -1,0 +1,239 @@
+{
+    // We start this language server when we open java files.
+    "selector": "source.java",
+    // The startup command.
+    "command": [
+        "${java_executable}",
+        "--add-modules=ALL-SYSTEM",
+        "--add-opens",
+        "java.base/java.util=ALL-UNNAMED",
+        "--add-opens",
+        "java.base/java.lang=ALL-UNNAMED",
+        "-Declipse.application=org.eclipse.jdt.ls.core.id1",
+        "-Dosgi.bundles.defaultStartLevel=4",
+        "-Declipse.product=org.eclipse.jdt.ls.core.product",
+        "-Dfile.encoding=UTF-8",
+        "-DwatchParentProcess=${watch_parent_process}",
+        "-noverify",
+        "-Xmx1G",
+        "-XX:+UseG1GC",
+        "-XX:+UseStringDeduplication",
+        "-jar",
+        "${packages}/LSP-jdtls/plugins/org.eclipse.equinox.launcher_1.6.0.v20200915-1508.jar",
+        "-configuration",
+        "${packages}/LSP-jdtls/config_${jdtls_platform}",
+        "-data",
+        "${storage_path}/LSP-jdtls"
+    ],
+    // The server-specific settings.
+    "settings": {
+        // Specifies the folder path to the JDK (11 or more recent) used to launch
+        // the Java Language Server. Leave null to use the JAVA_HOME environment variable,
+        // // "java" from your $PATH as a last resort.
+        "java.home": null,
+        // Enable/disable the 'auto build'
+        "java.autobuild.enabled": true,
+        // Generate method comments when generating the methods.
+        "java.codeGeneration.generateComments": false,
+        // Use 'instanceof' to compare types when generating the hashCode and equals
+        // methods.
+        "java.codeGeneration.hashCodeEquals.useInstanceof": false,
+        // Use Objects.hash and Objects.equals when generating the hashCode and
+        // equals methods. This setting only applies to Java 7 and higher.
+        "java.codeGeneration.hashCodeEquals.useJava7Objects": false,
+        // The code style for generating the toString method.
+        // possible values: STRING_CONCATENATION, STRING_BUILDER, STRING_BUILDER_CHAINED, STRING_FORMAT
+        "java.codeGeneration.toString.codeStyle": "STRING_CONCATENATION",
+        // Limit number of items in arrays/collections/maps to list, if 0 then list
+        // all.
+        "java.codeGeneration.toString.limitElements": 0,
+        // List contents of arrays instead of using native toString().
+        "java.codeGeneration.toString.listArrayContents": true,
+        // Skip null values when generating the toString method.
+        "java.codeGeneration.toString.skipNullValues": false,
+        // The template for generating the toString method.
+        "java.codeGeneration.toString.template": "${object.className} [${member.name()}=${member.value}, ${otherMembers}]",
+        // Use blocks in 'if' statements when generating the methods.
+        "java.codeGeneration.useBlocks": false,
+        // Enable/disable code completion support
+        "java.completion.enabled": true,
+        // Defines a list of static members or types with static members. Content
+        // assist will propose those static members even if the import is missing.
+        "java.completion.favoriteStaticMembers": [
+            "org.junit.Assert.*",
+            "org.junit.Assume.*",
+            "org.junit.jupiter.api.Assertions.*",
+            "org.junit.jupiter.api.Assumptions.*",
+            "org.junit.jupiter.api.DynamicContainer.*",
+            "org.junit.jupiter.api.DynamicTest.*",
+            "org.mockito.Mockito.*",
+            "org.mockito.ArgumentMatchers.*",
+            "org.mockito.Answers.*"
+        ],
+        // Defines the type filters. All types whose fully qualified name matches
+        // the selected filter strings will be ignored in content assist or quick
+        // fix proposals and when organizing imports. For example 'java.awt.*' will
+        // hide all types from the awt packages.
+        "java.completion.filteredTypes": [
+            "java.awt.*",
+            "com.sun.*"
+        ],
+        // When set to true, method arguments are guessed when a method is selected
+        // from as list of code assist proposals.
+        "java.completion.guessMethodArguments": false,
+        // Defines the sorting order of import statements. A package or type name
+        // prefix (e.g. 'org.eclipse') is a valid entry. An import is always added
+        // to the most specific group.
+        "java.completion.importOrder": [
+            "java",
+            "javax",
+            "com",
+            "org"
+        ],
+        // unknown setting
+        "java.completion.maxResults": 0,
+        // When set to true, code completion overwrites the current text. When set
+        // to false, code is simply added instead.
+        "java.completion.overwrite": true,
+        // Checks if the extension-generated project settings files (.project,
+        // .classpath, .factorypath, .settings/) should be excluded from the file
+        // explorer.
+        "java.configuration.checkProjectSettingsExclusions": true,
+        // Path to Maven's global settings.xml
+        "java.configuration.maven.globalSettings": null,
+        // Path to Maven's user settings.xml
+        "java.configuration.maven.userSettings": null,
+        // Map Java Execution Environments to local JDKs.
+        "java.configuration.runtimes": [],
+        // Specifies how modifications on build files update the Java
+        // classpath/configuration
+        // possible values: disabled, interactive, automatic
+        "java.configuration.updateBuildConfiguration": "interactive",
+        // Preferred content provider (a 3rd party decompiler id, usually)
+        "java.contentProvider.preferred": null,
+        // Specifies the severity of the message when the classpath is incomplete
+        // for a Java file
+        // possible values: ignore, info, warning, error
+        "java.errors.incompleteClasspath.severity": "warning",
+        // Enable/disable smart folding range support. If disabled, it will use the
+        // default indentation-based folding range provided by VS Code.
+        "java.foldingRange.enabled": false,
+        // Includes the comments during code formatting.
+        "java.format.comments.enabled": true,
+        // Enable/disable default Java formatter
+        "java.format.enabled": true,
+        // Enable/disable automatic block formatting when typing `;`, `<enter>` or
+        // `}`
+        "java.format.onType.enabled": true,
+        // Optional formatter profile name from the Eclipse formatter settings.
+        "java.format.settings.profile": null,
+        // unknown setting
+        "java.format.settings.url": null,
+        // Enable/disable the implementations code lens.
+        "java.implementationsCodeLens.enabled": false,
+        // Configure glob patterns for excluding folders. Use `!` to negate patterns
+        // to allow subfolders imports. You have to include a parent directory. The
+        // order is important.
+        "java.import.exclusions": [
+            "**/node_modules/**",
+            "**/.metadata/**",
+            "**/archetype-resources/**",
+            "**/META-INF/maven/**"
+        ],
+        // Arguments to pass to Gradle.
+        "java.import.gradle.arguments": null,
+        // Enable/disable the Gradle importer.
+        "java.import.gradle.enabled": true,
+        // Use Gradle from the specified local installation directory or GRADLE_HOME
+        // if the Gradle wrapper is missing or disabled and no
+        // 'java.import.gradle.version' is specified.
+        "java.import.gradle.home": null,
+        // The location to the JVM used to run the Gradle daemon.
+        "java.import.gradle.java.home": null,
+        // JVM arguments to pass to Gradle.
+        "java.import.gradle.jvmArguments": null,
+        // Enable/disable the Gradle offline mode.
+        "java.import.gradle.offline.enabled": false,
+        // Setting for GRADLE_USER_HOME.
+        "java.import.gradle.user.home": null,
+        // Use Gradle from the specific version if the Gradle wrapper is missing or
+        // disabled.
+        "java.import.gradle.version": null,
+        // Use Gradle from the 'gradle-wrapper.properties' file.
+        "java.import.gradle.wrapper.enabled": true,
+        // Enable/disable the Maven importer.
+        "java.import.maven.enabled": true,
+        // Defines allowed/disallowed SHA-256 checksums of Gradle Wrappers
+        "java.imports.gradle.wrapper.checksums": [],
+        // Specifies extra VM arguments used to launch the Java Language Server. Eg.
+        // use `-XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90
+        // -Dsun.zip.disableMemoryMapping=true -Xmx1G -Xms100m ` to optimize memory
+        // usage for container environments with the parallel garbage collector
+        "java.jdt.ls.vmargs": "-XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Xmx1G -Xms100m",
+        // Enable/disable eager download of Maven source artifacts.
+        "java.maven.downloadSources": false,
+        // Force update of Snapshots/Releases.
+        "java.maven.updateSnapshots": false,
+        // Max simultaneous project builds
+        "java.maxConcurrentBuilds": 1,
+        // [Experimental] Enable/disable progress reports from background processes
+        // on the server.
+        "java.progressReports.enabled": true,
+        // Enable/disable the server-mode switch information, when Java projects
+        // import is skipped on startup.
+        "java.project.importHint": true,
+        // Specifies whether to import the Java projects, when opening the folder in
+        // Hybrid mode for the first time.
+        // possible values: disabled, interactive, automatic
+        "java.project.importOnFirstTimeStartup": "interactive",
+        // Configure glob patterns for referencing local libraries to a Java
+        // project.
+        "java.project.referencedLibraries": [
+            "lib/**/*.jar"
+        ],
+        // Excludes files and folders from being refreshed by the Java Language
+        // Server, which can improve the overall performance. For example,
+        // ["node_modules",".git"] will exclude all files and folders named
+        // 'node_modules' or '.git'. Defaults to ["node_modules",".git"].
+        "java.project.resourceFilters": [
+            "node_modules",
+            ".git"
+        ],
+        // Specifies whether to update imports and package declarations when
+        // renaming files from File Explorer.
+        // possible values: never, autoApply, preview, prompt
+        "java.refactor.renameFromFileExplorer": "prompt",
+        // Include getter, setter and builder/constructor when finding references.
+        "java.references.includeAccessors": true,
+        // Enable/disable the references code lens.
+        "java.referencesCodeLens.enabled": false,
+        // Enable/disable auto organize imports on save action
+        "java.saveActions.organizeImports": false,
+        // Enable/disable Smart Selection support for Java. Disabling this option
+        // will not affect the VS Code built-in word-based and bracket-based smart
+        // selection.
+        "java.selectionRange.enabled": true,
+        // Enable/disable the semantic highlighting.
+        "java.semanticHighlighting.enabled": true,
+        // The launch mode for the Java extension
+        // possible values: Standard, LightWeight, Hybrid
+        "java.server.launchMode": "Hybrid",
+        // Automatically show build status on startup.
+        "java.showBuildStatusOnStart.enabled": false,
+        // Enable/disable the signature help.
+        "java.signatureHelp.enabled": false,
+        // Specifies the number of imports added before a star-import declaration is
+        // used.
+        "java.sources.organizeImports.starThreshold": 99,
+        // Specifies the number of static imports added before a star-import
+        // declaration is used.
+        "java.sources.organizeImports.staticStarThreshold": 99,
+        // unknown setting
+        "java.templates.fileHeader": [],
+        // unknown setting
+        "java.templates.typeComment": [],
+        // Traces the communication between VS Code and the Java language server.
+        // possible values: off, messages, verbose
+        "java.trace.server": "off",
+    }
+}

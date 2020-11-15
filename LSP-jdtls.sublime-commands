@@ -1,0 +1,10 @@
+[
+    {
+        "caption": "Preferences: LSP-jdtls Settings",
+        "command": "edit_settings",
+        "args": {
+            "base_file": "${packages}/LSP-jdtls/LSP-jdtls.sublime-settings",
+            "default": "// Settings in here override those in \"LSP-jdtls/LSP-jdtls.sublime-settings\"\n{\n\t$0\n}\n"
+        }
+    }
+]

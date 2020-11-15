@@ -21,3 +21,6 @@ source_files=(
 for file in ${source_files[@]}; do
     rsync $file out/
 done
+if ! [[ -f out/release.zip ]]; then
+    cd out && zip -q -r release.zip .
+fi

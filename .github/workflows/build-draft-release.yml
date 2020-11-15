@@ -25,7 +25,9 @@ jobs:
           release_name: ${{ github.event.inputs.package-semver }}
           draft: true
           prerelease: false
-          body: 'Sublime-Text-Version-Range: >=4070'
+          body: |
+            This release contains version 0.64.0 of eclipse.jdt.ls.
+            Sublime-Text-Version-Range: >=4070
       - name: Upload Zip
         uses: actions/upload-release-asset@v1
         env:

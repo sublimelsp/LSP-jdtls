@@ -30,11 +30,14 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         java_home = settings.get("java_home")
         if not java_home:
             java_home = os.environ.get("JAVA_HOME")
+        if java_home:
+            java_executable = os.path.join(java_home, "bin", "java")
+        else:
+            java_executable = "java"
         return {
-            "java_executable": "{}/bin/java".format(java_home) if java_home else "java",
+            "java_executable": java_executable,
             "watch_parent_process": "false" if sublime.platform() == "windows" else "true",
-            "jdtls_platform": _jdtls_platform(),
-            "jdtls_workspace": tempfile.tempdir
+            "jdtls_platform": _jdtls_platform()
         }
 
     def on_pre_server_command(self, command: Mapping[str, Any], done: Callable[[], None]) -> bool:

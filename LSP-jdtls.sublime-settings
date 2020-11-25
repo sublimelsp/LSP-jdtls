@@ -15,9 +15,12 @@
         "-Dfile.encoding=UTF-8",
         "-DwatchParentProcess=${watch_parent_process}",
         "-noverify",
+        "-XX:+UseParallelGC",
+        "-XX:GCTimeRatio=4",
+        "-XX:AdaptiveSizePolicyWeight=90",
+        "-Dsun.zip.disableMemoryMapping=true",
         "-Xmx1G",
-        "-XX:+UseG1GC",
-        "-XX:+UseStringDeduplication",
+        "-Xms100m",
         "-jar",
         "${packages}/LSP-jdtls/plugins/org.eclipse.equinox.launcher_1.6.0.v20200915-1508.jar",
         "-configuration",
@@ -29,7 +32,7 @@
     "settings": {
         // Specifies the folder path to the JDK (11 or more recent) used to launch
         // the Java Language Server. Leave null to use the JAVA_HOME environment variable,
-        // // "java" from your $PATH as a last resort.
+        // or "java" from your $PATH as a last resort.
         "java.home": null,
         // Enable/disable the 'auto build'
         "java.autobuild.enabled": true,
@@ -52,7 +55,7 @@
         // Skip null values when generating the toString method.
         "java.codeGeneration.toString.skipNullValues": false,
         // The template for generating the toString method.
-        "java.codeGeneration.toString.template": "${object.className} [${member.name()}=${member.value}, ${otherMembers}]",
+        "java.codeGeneration.toString.template": "\\${object.className} [\\${member.name()}=\\${member.value}, \\${otherMembers}]",
         // Use blocks in 'if' statements when generating the methods.
         "java.codeGeneration.useBlocks": false,
         // Enable/disable code completion support
@@ -165,11 +168,6 @@
         "java.import.maven.enabled": true,
         // Defines allowed/disallowed SHA-256 checksums of Gradle Wrappers
         "java.imports.gradle.wrapper.checksums": [],
-        // Specifies extra VM arguments used to launch the Java Language Server. Eg.
-        // use `-XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90
-        // -Dsun.zip.disableMemoryMapping=true -Xmx1G -Xms100m ` to optimize memory
-        // usage for container environments with the parallel garbage collector
-        "java.jdt.ls.vmargs": "-XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Xmx1G -Xms100m",
         // Enable/disable eager download of Maven source artifacts.
         "java.maven.downloadSources": false,
         // Force update of Snapshots/Releases.

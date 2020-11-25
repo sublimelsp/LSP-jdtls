@@ -27,7 +27,7 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
     @classmethod
     def additional_variables(cls) -> Optional[Dict[str, str]]:
         settings = sublime.load_settings("LSP-jdtls.sublime-settings")
-        java_home = settings.get("java_home")
+        java_home = settings.get("settings").get("java.home")
         if not java_home:
             java_home = os.environ.get("JAVA_HOME")
         if java_home:

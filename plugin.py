@@ -6,6 +6,10 @@ import sublime
 import os
 import tempfile
 
+# TODO: Not part of the public API :(
+from LSP.plugin.core.edit import apply_workspace_edit
+from LSP.plugin.core.edit import parse_workspace_edit
+
 
 def _jdtls_platform() -> str:
     p = sublime.platform()
@@ -44,12 +48,15 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         session = self.weaksession()
         if not session:
             return False
-        window = session.window
         cmd = command["command"]
-        args = command.get("arguments")
         if cmd == "java.apply.workspaceEdit":
-            # TODO
-            done()
+            changes = parse_workspace_edit(command["arguments"][0])
+            window = session.window
+            sublime.set_timeout(
+                lambda: apply_workspace_edit(window, changes).then(
+                    lambda _: sublime.set_timeout_async(done)
+                )
+            )
             return True
         return False
 

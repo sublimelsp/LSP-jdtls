@@ -15,13 +15,6 @@ This language server operates on views with the `source.java` base scope.
 
 Configure jdtls by running `Preferences: LSP-jdtls Settings` from the command palette.
 
-## Quirks
-
-- The language server expects the client (this package) to handle workspace edits. See [this issue](https://github.com/eclipse/eclipse.jdt.ls/issues/376) and [this comment](https://github.com/eclipse/eclipse.jdt.ls/pull/1278#issuecomment-559452278) for more information. TODO: Handle `java.apply.workspaceEdit`.
-- The language server currently throws an error for various calls to textDocument/codeAction in the case that we ask for "diagnostic-less" code actions under the caret, but it doesn't seem harmful.
-
-This package
-
 ## Capabilities
 
 jdtls can do a lot of cool things, like

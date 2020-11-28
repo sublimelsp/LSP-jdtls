@@ -127,7 +127,7 @@
         "java.format.enabled": true,
         // Enable/disable automatic block formatting when typing `;`, `<enter>` or
         // `}`
-        "java.format.onType.enabled": true,
+        "java.format.onType.enabled": false,
         // Optional formatter profile name from the Eclipse formatter settings.
         "java.format.settings.profile": null,
         // unknown setting
@@ -212,14 +212,14 @@
         // selection.
         "java.selectionRange.enabled": true,
         // Enable/disable the semantic highlighting.
-        "java.semanticHighlighting.enabled": true,
+        "java.semanticHighlighting.enabled": false,
         // The launch mode for the Java extension
         // possible values: Standard, LightWeight, Hybrid
         "java.server.launchMode": "Hybrid",
         // Automatically show build status on startup.
         "java.showBuildStatusOnStart.enabled": false,
         // Enable/disable the signature help.
-        "java.signatureHelp.enabled": false,
+        "java.signatureHelp.enabled": true,
         // Specifies the number of imports added before a star-import declaration is
         // used.
         "java.sources.organizeImports.starThreshold": 99,

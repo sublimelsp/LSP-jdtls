@@ -26,7 +26,7 @@ jobs:
           draft: true
           prerelease: false
           body: |
-            This release contains version 0.64.0 of eclipse.jdt.ls.
+            This release contains version 0.66.0 of eclipse.jdt.ls.
             Sublime-Text-Version-Range: >=4070
       - name: Upload Zip
         uses: actions/upload-release-asset@v1

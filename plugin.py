@@ -1,14 +1,16 @@
 from LSP.plugin import AbstractPlugin
 from LSP.plugin import register_plugin
+from LSP.plugin import Session
 from LSP.plugin import unregister_plugin
 from LSP.plugin.core.typing import Optional, Any, List, Dict, Mapping, Callable
-import sublime
 import os
+import sublime
 import tempfile
 
 # TODO: Not part of the public API :(
 from LSP.plugin.core.edit import apply_workspace_edit
 from LSP.plugin.core.edit import parse_workspace_edit
+from LSP.plugin.core.views import location_to_encoded_filename
 
 
 def _jdtls_platform() -> str:
@@ -44,6 +46,10 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
             "jdtls_platform": _jdtls_platform()
         }
 
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.reflist = []  # type: List[str]
+
     def on_pre_server_command(self, command: Mapping[str, Any], done: Callable[[], None]) -> bool:
         session = self.weaksession()
         if not session:
@@ -58,7 +64,34 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
                 )
             )
             return True
+        elif cmd == "java.show.references":
+            self._show_quick_panel(session, command["arguments"][2])
+            done()
+            return True
         return False
+
+    def _show_quick_panel(self, session: Session, references: List[Dict[str, Any]]) -> None:
+        self.reflist = [location_to_encoded_filename(r) for r in references]
+        session.window.show_quick_panel(
+            self.reflist,
+            self._on_ref_choice,
+            sublime.KEEP_OPEN_ON_FOCUS_LOST,
+            0,
+            self._on_ref_highlight
+        )
+
+    def _on_ref_choice(self, index: int) -> None:
+        self._open_ref_index(index, transient=False)
+
+    def _on_ref_highlight(self, index: int) -> None:
+        self._open_ref_index(index, transient=True)
+
+    def _open_ref_index(self, index: int, transient: bool = False) -> None:
+        if index != -1:
+            session = self.weaksession()
+            if session:
+                flags = sublime.ENCODED_POSITION | sublime.TRANSIENT if transient else sublime.ENCODED_POSITION
+                session.window.open_file(self.reflist[index], flags)
 
     # notification and request handlers
 

@@ -133,7 +133,7 @@
         // unknown setting
         "java.format.settings.url": null,
         // Enable/disable the implementations code lens.
-        "java.implementationsCodeLens.enabled": false,
+        "java.implementationsCodeLens.enabled": true,
         // Configure glob patterns for excluding folders. Use `!` to negate patterns
         // to allow subfolders imports. You have to include a parent directory. The
         // order is important.
@@ -204,7 +204,7 @@
         // Include getter, setter and builder/constructor when finding references.
         "java.references.includeAccessors": true,
         // Enable/disable the references code lens.
-        "java.referencesCodeLens.enabled": false,
+        "java.referencesCodeLens.enabled": true,
         // Enable/disable auto organize imports on save action
         "java.saveActions.organizeImports": false,
         // Enable/disable Smart Selection support for Java. Disabling this option

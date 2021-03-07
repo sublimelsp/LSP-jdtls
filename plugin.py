@@ -62,11 +62,11 @@ def serverdir(storage_path) -> str:
     version = serverversion()
     servers_dir = os.path.join(storage_path, SERVER_DIR)
     if version:
-        return os.path.join(os.path.join(storage_path, SERVER_DIR), version)
+        return os.path.join(servers_dir, version)
     else:
         servers = os.listdir(servers_dir)
         if servers:
-            return servers[0]
+            return os.path.join(servers_dir, servers[0])
     raise ConnectionError("current release could not be fetched and no release is available offline")
 
 

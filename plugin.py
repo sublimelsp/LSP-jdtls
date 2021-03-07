@@ -41,15 +41,13 @@ def fetch_latest_release() -> None:
             pass
 
 
-fetch_latest_release()
-
-
 def serverversion() -> Optional[str]:
     """
     Returns the version of to use. Can be None if
     no version is set in settings and no connection is available and
     and no server is available offline.
     """
+    fetch_latest_release()
     settings = sublime.load_settings(SETTINGS_FILENAME)
     version = settings.get('version')
     if version:

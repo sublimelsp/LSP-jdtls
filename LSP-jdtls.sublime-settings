@@ -22,12 +22,15 @@
         "-Xmx1G",
         "-Xms100m",
         "-jar",
-        "${packages}/LSP-jdtls/plugins/org.eclipse.equinox.launcher_1.6.0.v20200915-1508.jar",
+        "${serverdir}/plugins/org.eclipse.equinox.launcher_${launcher_version}.jar",
         "-configuration",
-        "${packages}/LSP-jdtls/config_${jdtls_platform}",
+        "${serverdir}/config_${jdtls_platform}",
         "-data",
-        "${storage_path}/LSP-jdtls"
+        "${datadir}"
     ],
+    // The jdtls version. "" for latest snapshot. Must be formatted like "0.71.0-202103052234" matching http://download.eclipse.org/jdtls/snapshots/.
+    // Restart sublime after changing this setting
+    "version": "",
     // The server-specific settings.
     "settings": {
         // Specifies the folder path to the JDK (11 or more recent) used to launch

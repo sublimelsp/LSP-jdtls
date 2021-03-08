@@ -3,6 +3,8 @@ from LSP.plugin import register_plugin
 from LSP.plugin import Session
 from LSP.plugin import unregister_plugin
 from LSP.plugin.core.typing import Optional, Any, List, Dict, Mapping, Callable
+from LSP.plugin.core.registry import LspTextCommand
+from LSP.plugin.core.protocol import ExecuteCommandParams
 import os
 import sublime
 from urllib.request import urlopen
@@ -24,6 +26,7 @@ SETTINGS_FILENAME = "LSP-jdtls.sublime-settings"
 STORAGE_DIR = 'LSP-jdtls'
 SERVER_DIR = "server"
 DATA_DIR = "data"
+SESSION_NAME = "jdtls"
 
 
 def fetch_latest_release() -> None:
@@ -90,7 +93,7 @@ def download_file(url, file_name) -> None:
 class EclipseJavaDevelopmentTools(AbstractPlugin):
     @classmethod
     def name(cls) -> str:
-        return "jdtls"
+        return SESSION_NAME
 
     @classmethod
     def storage_subpath(cls) -> str:
@@ -205,6 +208,24 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         if not message:
             return
         session.window.status_message(message)
+
+
+class LspJdtlsStartDebugSession(LspTextCommand):
+
+    session_name = SESSION_NAME
+
+    def run(self, edit, id):
+        session = self.session_by_name(SESSION_NAME)
+        if not session:
+            return
+        command = {"command": "vscode.java.startDebugSession"}  # type: ExecuteCommandParams
+        session.execute_command(command, False).then(lambda resp: self.handle_response(id, resp))
+
+    def handle_response(self, id, response):
+        window = self.view.window()
+        if window is None:
+            return
+        window.run_command('debugger_lsp_jdtls_start_debugging_response', {'id': id, 'port': response, 'error': None})
 
 
 def plugin_loaded() -> None:

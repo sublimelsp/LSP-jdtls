@@ -265,8 +265,16 @@ class LspJdtlsRefreshWorkspace(LspTextCommand):
         session = self.session_by_name(SESSION_NAME)
         if not session:
             return
-        params = {"textDocument": text_document_identifier(self.view)}
-        session.send_notification(Notification("java/projectConfigurationUpdate", params))
+        command = {"command": "vscode.java.resolveBuildFiles"}  # type: ExecuteCommandParams
+        session.execute_command(command, False).then(self._send_update_requests)
+
+    def _send_update_requests(self, files):
+        session = self.session_by_name(SESSION_NAME)
+        if not session:
+            return
+        for uri in files:
+            params = {"uri": uri}
+            session.send_notification(Notification("java/projectConfigurationUpdate", params))
 
 
 def plugin_loaded() -> None:

@@ -14,7 +14,7 @@ import re
 import shutil
 import tempfile
 import tarfile
-import itertools
+import json
 
 # TODO: Not part of the public API :(
 from LSP.plugin.core.edit import apply_workspace_edit
@@ -251,12 +251,31 @@ class LspJdtlsStartDebugSession(LspTextCommand):
         session = self.session_by_name(SESSION_NAME)
         if not session:
             return
-        builder["classPaths"] = list(itertools.chain(*response))
+        builder["modulePaths"] = response[0]
+        builder["classPaths"] = response[1]
 
-        if not builder["classPaths"]:
-            builder["error"] = "Failed to resolve classpaths"
+        if not builder["modulePaths"] and not builder["classPaths"]:
+            builder["error"] = "Failed to resolve classpaths/modulepaths"
             self._send_response(builder)
 
+        # See https://github.com/microsoft/vscode-java-debug/blob/b2a48319952b1af8a4a328fc95d2891de947df94/src/configurationProvider.ts#L297
+        command = {
+            "command": "vscode.java.checkProjectSettings",
+            "arguments": [json.dumps({
+                "className": builder["mainClass"],
+                "projectName": builder["projectName"],
+                "inheritedOptions": True,
+                "expectedOptions": {"org.eclipse.jdt.core.compiler.problem.enablePreviewFeatures": "enabled"}
+            })]
+        }  # type: ExecuteCommandParams
+        session.execute_command(command, False).then(lambda response: self._enable_preview(builder, response))
+
+    def _enable_preview(self, builder, response):
+        session = self.session_by_name(SESSION_NAME)
+        if not session:
+            return
+
+        builder["enablePreview"] = response
         command = {"command": "vscode.java.startDebugSession"}  # type: ExecuteCommandParams
         session.execute_command(command, False).then(lambda response: self._start_debug_session(builder, response))
 

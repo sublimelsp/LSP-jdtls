@@ -14,6 +14,7 @@ import re
 import shutil
 import tempfile
 import tarfile
+import itertools
 
 # TODO: Not part of the public API :(
 from LSP.plugin.core.edit import apply_workspace_edit
@@ -212,6 +213,8 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
 
 
 class LspJdtlsStartDebugSession(LspTextCommand):
+    """ Connector to Debugger.
+    """
 
     session_name = SESSION_NAME
 
@@ -219,14 +222,41 @@ class LspJdtlsStartDebugSession(LspTextCommand):
         session = self.session_by_name(SESSION_NAME)
         if not session:
             return
-        command = {"command": "vscode.java.startDebugSession"}  # type: ExecuteCommandParams
-        session.execute_command(command, False).then(lambda resp: self.handle_response(id, resp))
+        builder = {}
+        builder["id"] = id
 
-    def handle_response(self, id, response):
+        command = {"command": "vscode.java.resolveMainClass"}  # type: ExecuteCommandParams
+        session.execute_command(command, False).then(lambda response: self._resolve_mainclass(builder, response))
+
+    def _resolve_mainclass(self, builder, response):
+        session = self.session_by_name(SESSION_NAME)
+        if not session:
+            return
+        builder["mainClass"] = response[0]["mainClass"]
+        builder["projectName"] = response[0]["projectName"]
+
+        command = {
+            "command": "vscode.java.resolveClasspath",
+            "arguments": [builder["mainClass"], builder["projectName"]]
+        }  # type: ExecuteCommandParams
+        session.execute_command(command, False).then(lambda response: self._resolve_classpath(builder, response))
+
+    def _resolve_classpath(self, builder, response):
+        session = self.session_by_name(SESSION_NAME)
+        if not session:
+            return
+        builder["classPaths"] = list(itertools.chain(*response))
+
+        command = {"command": "vscode.java.startDebugSession"}  # type: ExecuteCommandParams
+        session.execute_command(command, False).then(lambda response: self._start_debug_session(builder, response))
+
+    def _start_debug_session(self, builder, response):
         window = self.view.window()
         if window is None:
             return
-        window.run_command('debugger_lsp_jdtls_start_debugging_response', {'id': id, 'port': response, 'error': None})
+        builder["port"] = response
+        print(builder)
+        window.run_command('debugger_lsp_jdtls_start_debugging_response', builder)
 
 
 class LspJdtlsBuildWorkspace(LspTextCommand):

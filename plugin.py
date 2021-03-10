@@ -2,9 +2,10 @@ from LSP.plugin import AbstractPlugin
 from LSP.plugin import register_plugin
 from LSP.plugin import Session
 from LSP.plugin import unregister_plugin
+from LSP.plugin import Request
 from LSP.plugin.core.typing import Optional, Any, List, Dict, Mapping, Callable
 from LSP.plugin.core.registry import LspTextCommand
-from LSP.plugin.core.protocol import ExecuteCommandParams
+from LSP.plugin.core.protocol import ExecuteCommandParams, Notification
 import os
 import sublime
 from urllib.request import urlopen
@@ -17,7 +18,7 @@ import tarfile
 # TODO: Not part of the public API :(
 from LSP.plugin.core.edit import apply_workspace_edit
 from LSP.plugin.core.edit import parse_workspace_edit
-from LSP.plugin.core.views import location_to_encoded_filename
+from LSP.plugin.core.views import location_to_encoded_filename, text_document_identifier
 
 
 DOWNLOAD_URL = "http://download.eclipse.org/jdtls/snapshots"
@@ -226,6 +227,46 @@ class LspJdtlsStartDebugSession(LspTextCommand):
         if window is None:
             return
         window.run_command('debugger_lsp_jdtls_start_debugging_response', {'id': id, 'port': response, 'error': None})
+
+
+class LspJdtlsBuildWorkspace(LspTextCommand):
+
+    session_name = SESSION_NAME
+
+    def run(self, edit):
+        session = self.session_by_name(SESSION_NAME)
+        if not session:
+            return
+        params = True
+        session.send_request(Request("java/buildWorkspace", params), self.on_response_async, self.on_error_async)
+
+    def on_response_async(self, response):
+        window = self.view.window()
+        if window is None:
+            return
+        if response == 0:
+            window.status_message("LSP-jdtls: Build failed")
+        elif response == 1:
+            window.status_message("LSP-jdtls: Build succeeded")
+        elif response == 2:
+            window.status_message("LSP-jdtls: Build ended with error")
+        elif response == 3:
+            window.status_message("LSP-jdtls: Build cancelled")
+
+    def on_error_async(self, error):
+        pass
+
+
+class LspJdtlsRefreshWorkspace(LspTextCommand):
+
+    session_name = SESSION_NAME
+
+    def run(self, edit):
+        session = self.session_by_name(SESSION_NAME)
+        if not session:
+            return
+        params = {"textDocument": text_document_identifier(self.view)}
+        session.send_notification(Notification("java/projectConfigurationUpdate", params))
 
 
 def plugin_loaded() -> None:

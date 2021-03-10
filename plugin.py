@@ -233,7 +233,7 @@ class LspJdtlsStartDebugSession(LspTextCommand):
         if not session:
             return
         builder["mainClass"] = response[0]["mainClass"]
-        builder["projectName"] = response[0]["projectName"]
+        builder["projectName"] = response[0]["projectName"] if "projectName" in response[0] else ""
 
         command = {
             "command": "vscode.java.resolveClasspath",
@@ -255,7 +255,6 @@ class LspJdtlsStartDebugSession(LspTextCommand):
         if window is None:
             return
         builder["port"] = response
-        print(builder)
         window.run_command('debugger_lsp_jdtls_start_debugging_response', builder)
 
 

@@ -224,6 +224,7 @@ class LspJdtlsStartDebugSession(LspTextCommand):
             return
         builder = {}
         builder["id"] = id
+        builder["error"] = None
 
         command = {"command": "vscode.java.resolveMainClass"}  # type: ExecuteCommandParams
         session.execute_command(command, False).then(lambda response: self._resolve_mainclass(builder, response))
@@ -232,6 +233,11 @@ class LspJdtlsStartDebugSession(LspTextCommand):
         session = self.session_by_name(SESSION_NAME)
         if not session:
             return
+
+        if not response or "mainClass" not in response[0]:
+            builder["error"] = "Failed to resolve main class"
+            self._send_response(builder)
+
         builder["mainClass"] = response[0]["mainClass"]
         builder["projectName"] = response[0]["projectName"] if "projectName" in response[0] else ""
 
@@ -247,14 +253,21 @@ class LspJdtlsStartDebugSession(LspTextCommand):
             return
         builder["classPaths"] = list(itertools.chain(*response))
 
+        if not builder["classPaths"]:
+            builder["error"] = "Failed to resolve classpaths"
+            self._send_response(builder)
+
         command = {"command": "vscode.java.startDebugSession"}  # type: ExecuteCommandParams
         session.execute_command(command, False).then(lambda response: self._start_debug_session(builder, response))
 
     def _start_debug_session(self, builder, response):
+        builder["port"] = response
+        self._send_response(builder)
+
+    def _send_response(self, builder):
         window = self.view.window()
         if window is None:
             return
-        builder["port"] = response
         window.run_command('debugger_lsp_jdtls_start_debugging_response', builder)
 
 

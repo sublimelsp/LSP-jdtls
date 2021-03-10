@@ -6,5 +6,13 @@
             "base_file": "${packages}/LSP-jdtls/LSP-jdtls.sublime-settings",
             "default": "// Settings in here override those in \"LSP-jdtls/LSP-jdtls.sublime-settings\"\n{\n\t$0\n}\n"
         }
+    },
+    {
+        "caption": "LSP-jdtls: Build Workspace",
+        "command": "lsp_jdtls_build_workspace",
+    },
+    {
+        "caption": "LSP-jdtls: Refresh Workspace",
+        "command": "lsp_jdtls_refresh_workspace",
     }
 ]

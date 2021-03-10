@@ -14,6 +14,7 @@ import re
 import shutil
 import tempfile
 import tarfile
+import json
 
 # TODO: Not part of the public API :(
 from LSP.plugin.core.edit import apply_workspace_edit
@@ -212,6 +213,8 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
 
 
 class LspJdtlsStartDebugSession(LspTextCommand):
+    """ Connector to Debugger.
+    """
 
     session_name = SESSION_NAME
 
@@ -219,14 +222,72 @@ class LspJdtlsStartDebugSession(LspTextCommand):
         session = self.session_by_name(SESSION_NAME)
         if not session:
             return
-        command = {"command": "vscode.java.startDebugSession"}  # type: ExecuteCommandParams
-        session.execute_command(command, False).then(lambda resp: self.handle_response(id, resp))
+        builder = {}
+        builder["id"] = id
+        builder["error"] = None
 
-    def handle_response(self, id, response):
+        command = {"command": "vscode.java.resolveMainClass"}  # type: ExecuteCommandParams
+        session.execute_command(command, False).then(lambda response: self._resolve_mainclass(builder, response))
+
+    def _resolve_mainclass(self, builder, response):
+        session = self.session_by_name(SESSION_NAME)
+        if not session:
+            return
+
+        if not response or "mainClass" not in response[0]:
+            builder["error"] = "Failed to resolve main class"
+            self._send_response(builder)
+
+        builder["mainClass"] = response[0]["mainClass"]
+        builder["projectName"] = response[0]["projectName"] if "projectName" in response[0] else ""
+
+        command = {
+            "command": "vscode.java.resolveClasspath",
+            "arguments": [builder["mainClass"], builder["projectName"]]
+        }  # type: ExecuteCommandParams
+        session.execute_command(command, False).then(lambda response: self._resolve_classpath(builder, response))
+
+    def _resolve_classpath(self, builder, response):
+        session = self.session_by_name(SESSION_NAME)
+        if not session:
+            return
+        builder["modulePaths"] = response[0]
+        builder["classPaths"] = response[1]
+
+        if not builder["modulePaths"] and not builder["classPaths"]:
+            builder["error"] = "Failed to resolve classpaths/modulepaths"
+            self._send_response(builder)
+
+        # See https://github.com/microsoft/vscode-java-debug/blob/b2a48319952b1af8a4a328fc95d2891de947df94/src/configurationProvider.ts#L297
+        command = {
+            "command": "vscode.java.checkProjectSettings",
+            "arguments": [json.dumps({
+                "className": builder["mainClass"],
+                "projectName": builder["projectName"],
+                "inheritedOptions": True,
+                "expectedOptions": {"org.eclipse.jdt.core.compiler.problem.enablePreviewFeatures": "enabled"}
+            })]
+        }  # type: ExecuteCommandParams
+        session.execute_command(command, False).then(lambda response: self._enable_preview(builder, response))
+
+    def _enable_preview(self, builder, response):
+        session = self.session_by_name(SESSION_NAME)
+        if not session:
+            return
+
+        builder["enablePreview"] = response
+        command = {"command": "vscode.java.startDebugSession"}  # type: ExecuteCommandParams
+        session.execute_command(command, False).then(lambda response: self._start_debug_session(builder, response))
+
+    def _start_debug_session(self, builder, response):
+        builder["port"] = response
+        self._send_response(builder)
+
+    def _send_response(self, builder):
         window = self.view.window()
         if window is None:
             return
-        window.run_command('debugger_lsp_jdtls_start_debugging_response', {'id': id, 'port': response, 'error': None})
+        window.run_command('debugger_lsp_jdtls_start_debugging_response', builder)
 
 
 class LspJdtlsBuildWorkspace(LspTextCommand):

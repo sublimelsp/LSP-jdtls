@@ -3,6 +3,7 @@
 This is a helper package that manages and downloads the [Eclipse JDT language server](https://projects.eclipse.org/projects/eclipse.jdt.ls) for you.
 
 To use this package, you must have:
+
 - The [LSP](https://packagecontrol.io/packages/LSP) package.
 - A Java SDK.
 - It's recommended to have `JAVA_HOME` defined in your environment variables. Otherwise, specify `java.home` in the plugin settings.

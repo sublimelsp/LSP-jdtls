@@ -1,6 +1,13 @@
 {
     // We start this language server when we open java files.
     "selector": "source.java",
+    // Declares what URI schemes this server attaches to.
+    "schemes": [
+        // regular files on disk
+        "file",
+        // opened by a DAP-compatible debugger
+        "jdt"
+    ],
     // The startup command.
     "command": [
         "${java_executable}",

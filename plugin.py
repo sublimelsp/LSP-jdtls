@@ -4,8 +4,7 @@ from LSP.plugin import Session
 from LSP.plugin import unregister_plugin
 from LSP.plugin import Request
 from LSP.plugin.core.typing import Optional, Any, List, Dict, Mapping, Callable
-from LSP.plugin.core.registry import LspTextCommand
-from LSP.plugin.core.protocol import ExecuteCommandParams, Notification
+
 import os
 import sublime
 from urllib.request import urlopen
@@ -18,6 +17,10 @@ import tarfile
 # TODO: Not part of the public API :(
 from LSP.plugin.core.edit import apply_workspace_edit
 from LSP.plugin.core.edit import parse_workspace_edit
+from LSP.plugin.core.protocol import DocumentUri
+from LSP.plugin.core.protocol import ExecuteCommandParams
+from LSP.plugin.core.protocol import Notification
+from LSP.plugin.core.registry import LspTextCommand
 from LSP.plugin.core.views import location_to_encoded_filename, text_document_identifier
 
 
@@ -155,6 +158,20 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
                 absdir = os.path.join(tempdir, dir)
                 if os.path.isdir(absdir):
                     shutil.move(absdir, serverdir(cls.storage_subpath()))
+
+    def on_open_uri_async(self, uri: DocumentUri, callback: Callable[[str, str, str], None]) -> bool:
+        if not uri.startswith("jdt:"):
+            return False
+        session = self.weaksession()
+        if not session:
+            return False
+        view = session.window.active_view()
+        session.send_request_async(
+            Request("java/classFileContents", text_document_identifier(uri), view, progress=True),
+            lambda resp: callback(uri, resp, "Packages/Java/Java.sublime-syntax"),
+            lambda err: callback("ERROR", str(err), "Packages/Text/Plain text.tmLanguage")
+        )
+        return True
 
     def on_pre_server_command(self, command: Mapping[str, Any], done: Callable[[], None]) -> bool:
         session = self.weaksession()

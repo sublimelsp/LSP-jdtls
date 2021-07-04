@@ -166,6 +166,9 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         if not session:
             return False
         view = session.window.active_view()
+        # https://github.com/redhat-developer/vscode-java/blob/9f32875a67352487f5c414bb7fef04c9b00af89d/src/protocol.ts#L105-L107
+        # https://github.com/redhat-developer/vscode-java/blob/9f32875a67352487f5c414bb7fef04c9b00af89d/src/providerDispatcher.ts#L61-L76
+        # https://github.com/redhat-developer/vscode-java/blob/9f32875a67352487f5c414bb7fef04c9b00af89d/src/providerDispatcher.ts#L27-L28
         session.send_request_async(
             Request("java/classFileContents", text_document_identifier(uri), view, progress=True),
             lambda resp: callback(uri, resp, "Packages/Java/Java.sublime-syntax"),

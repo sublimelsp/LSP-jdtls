@@ -3,6 +3,7 @@ from LSP.plugin import register_plugin
 from LSP.plugin import Session
 from LSP.plugin import unregister_plugin
 from LSP.plugin import Request
+from LSP.plugin import Notification
 from LSP.plugin.core.typing import Optional, Any, List, Dict, Mapping, Callable
 
 import os
@@ -19,9 +20,9 @@ from LSP.plugin.core.edit import apply_workspace_edit
 from LSP.plugin.core.edit import parse_workspace_edit
 from LSP.plugin.core.protocol import DocumentUri
 from LSP.plugin.core.protocol import ExecuteCommandParams
-from LSP.plugin.core.protocol import Notification
 from LSP.plugin.core.registry import LspTextCommand
-from LSP.plugin.core.views import location_to_encoded_filename, text_document_identifier
+from LSP.plugin.core.views import location_to_encoded_filename
+from LSP.plugin.core.views import text_document_identifier
 
 
 DOWNLOAD_URL = "http://download.eclipse.org/jdtls/snapshots"

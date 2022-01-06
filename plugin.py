@@ -148,10 +148,10 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         os.makedirs(basedir)
         with tempfile.TemporaryDirectory() as tempdir:
             tar_path = os.path.join(tempdir, "server.tar.gz")
-            sublime.status_message("LSP-jdtls: downloading...")
+            sublime.status_message("LSP-jdtls: downloading server...")
             download_file(DOWNLOAD_URL + "/jdt-language-server-" + version + ".tar.gz",
                           tar_path)
-            sublime.status_message("LSP-jdtls: extracting")
+            sublime.status_message("LSP-jdtls: extracting server")
             tar = tarfile.open(tar_path, "r:gz")
             tar.extractall(tempdir)
             tar.close()
@@ -159,6 +159,9 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
                 absdir = os.path.join(tempdir, dir)
                 if os.path.isdir(absdir):
                     shutil.move(absdir, serverdir(cls.storage_subpath()))
+            sublime.status_message("LSP-jdtls: downloading lombok...")
+            download_file("https://projectlombok.org/downloads/lombok.jar",
+                          os.path.join(serverdir(cls.storage_subpath()), "lombok.jar"))
 
     def on_open_uri_async(self, uri: DocumentUri, callback: Callable[[str, str, str], None]) -> bool:
         if not uri.startswith("jdt:"):

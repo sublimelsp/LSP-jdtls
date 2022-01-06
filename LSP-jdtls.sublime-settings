@@ -28,6 +28,7 @@
         "-Dsun.zip.disableMemoryMapping=true",
         "-Xmx1G",
         "-Xms100m",
+        "-javaagent:${serverdir}/lombok.jar",
         "-jar",
         "${serverdir}/plugins/org.eclipse.equinox.launcher_${launcher_version}.jar",
         "-configuration",

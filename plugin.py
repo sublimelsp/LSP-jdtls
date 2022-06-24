@@ -9,7 +9,6 @@ from LSP.plugin.core.typing import Optional, Any, List, Dict, Mapping, Callable
 import os
 import sublime
 from urllib.request import urlopen
-from urllib.error import URLError
 import re
 import shutil
 import tempfile

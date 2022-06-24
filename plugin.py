@@ -26,7 +26,7 @@ from LSP.plugin.core.views import text_document_identifier
 
 
 DOWNLOAD_URL = "http://download.eclipse.org/jdtls/snapshots"
-LATEST_SNAPSHOT = None
+DEFAULT_VERSION = "1.10.0-202203080220"
 SETTINGS_FILENAME = "LSP-jdtls.sublime-settings"
 STORAGE_DIR = 'LSP-jdtls'
 SERVER_DIR = "server"
@@ -34,33 +34,17 @@ DATA_DIR = "data"
 SESSION_NAME = "jdtls"
 
 
-def fetch_latest_release() -> None:
-    """
-    Fetches the latest release.
-    """
-    global LATEST_SNAPSHOT
-    if not LATEST_SNAPSHOT:
-        try:
-            with urlopen(DOWNLOAD_URL + "/latest.txt") as f:
-                data = f.read().decode('utf-8')
-                version = re.search("jdt-language-server-(.*).tar.gz", data)
-                LATEST_SNAPSHOT = version.group(1)
-        except URLError:
-            pass
-
-
-def serverversion() -> Optional[str]:
+def serverversion() -> str:
     """
     Returns the version of to use. Can be None if
     no version is set in settings and no connection is available and
     and no server is available offline.
     """
-    fetch_latest_release()
     settings = sublime.load_settings(SETTINGS_FILENAME)
     version = settings.get('version')
     if version:
         return version
-    return LATEST_SNAPSHOT
+    return DEFAULT_VERSION
 
 
 def serverdir(storage_path) -> str:
@@ -69,13 +53,7 @@ def serverdir(storage_path) -> str:
     """
     version = serverversion()
     servers_dir = os.path.join(storage_path, SERVER_DIR)
-    if version:
-        return os.path.join(servers_dir, version)
-    else:
-        servers = os.listdir(servers_dir)
-        if servers:
-            return os.path.join(servers_dir, servers[0])
-    raise ConnectionError("current release could not be fetched and no release is available offline")
+    return os.path.join(servers_dir, version)
 
 
 def _jdtls_platform() -> str:
@@ -140,8 +118,6 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
     @classmethod
     def install_or_update(cls) -> None:
         version = serverversion()
-        if not version:
-            return
         basedir = cls.storage_subpath()
         if os.path.isdir(basedir):
             shutil.rmtree(basedir)

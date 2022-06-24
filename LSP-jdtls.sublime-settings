@@ -35,7 +35,8 @@
         "-data",
         "${datadir}"
     ],
-    // The jdtls version. "" for latest snapshot. Must be formatted like "0.71.0-202103052234" matching http://download.eclipse.org/jdtls/snapshots/.
+    // Overwrite the jdtls version. An empty string uses the latest release that was tested by the LSP-jdtls developers. 
+    // Must be formatted like "0.71.0-202103052234" matching http://download.eclipse.org/jdtls/snapshots/.
     // Restart sublime after changing this setting
     "version": "",
     // The server-specific settings.

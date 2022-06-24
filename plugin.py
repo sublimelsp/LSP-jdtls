@@ -4,6 +4,7 @@ from LSP.plugin import Session
 from LSP.plugin import unregister_plugin
 from LSP.plugin import Request
 from LSP.plugin import Notification
+from LSP.plugin.core.types import ClientConfig
 from LSP.plugin.core.typing import Optional, Any, List, Dict, Mapping, Callable
 
 import os
@@ -18,7 +19,7 @@ import tarfile
 # TODO: Not part of the public API :(
 from LSP.plugin.core.edit import apply_workspace_edit
 from LSP.plugin.core.edit import parse_workspace_edit
-from LSP.plugin.core.protocol import DocumentUri
+from LSP.plugin.core.protocol import DocumentUri, WorkspaceFolder
 from LSP.plugin.core.protocol import ExecuteCommandParams
 from LSP.plugin.core.registry import LspTextCommand
 from LSP.plugin.core.views import location_to_encoded_filename
@@ -26,6 +27,7 @@ from LSP.plugin.core.views import text_document_identifier
 
 
 DOWNLOAD_URL = "http://download.eclipse.org/jdtls/snapshots"
+LOMBOK_URL = "https://projectlombok.org/downloads/lombok.jar"
 LATEST_SNAPSHOT = None
 SETTINGS_FILENAME = "LSP-jdtls.sublime-settings"
 STORAGE_DIR = 'LSP-jdtls'
@@ -95,6 +97,11 @@ def download_file(url, file_name) -> None:
         shutil.copyfileobj(response, out_file)
 
 
+def lombok_path(storage_path):
+    servers_dir = os.path.join(storage_path, SERVER_DIR)
+    return os.path.join(servers_dir, "lombok.jar")
+
+
 class EclipseJavaDevelopmentTools(AbstractPlugin):
     @classmethod
     def name(cls) -> str:
@@ -129,13 +136,27 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
             "launcher_version": launcher_version
         }
 
+    @classmethod
+    def on_pre_start(cls, window: sublime.Window, initiating_view: sublime.View,
+                     workspace_folders: List[WorkspaceFolder], configuration: ClientConfig) -> Optional[str]:
+        javaagent_arg = "-javaagent:" + lombok_path(cls.storage_subpath())
+        # Prevent adding the argument multiple times
+        if configuration.settings.get("jdtls.enableLombok") and javaagent_arg not in configuration.command:
+            jar_index = configuration.command.index("-jar")
+            configuration.command.insert(jar_index, javaagent_arg)
+        elif javaagent_arg in configuration.command:
+            configuration.command.remove(javaagent_arg)
+        return None
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.reflist = []  # type: List[str]
 
     @classmethod
     def needs_update_or_installation(cls) -> bool:
-        return not os.path.isdir(serverdir(cls.storage_subpath()))
+        result = not os.path.isdir(serverdir(cls.storage_subpath()))
+        result |= not os.path.isfile(lombok_path(cls.storage_subpath()))
+        return result
 
     @classmethod
     def install_or_update(cls) -> None:
@@ -148,10 +169,10 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         os.makedirs(basedir)
         with tempfile.TemporaryDirectory() as tempdir:
             tar_path = os.path.join(tempdir, "server.tar.gz")
-            sublime.status_message("LSP-jdtls: downloading...")
+            sublime.status_message("LSP-jdtls: downloading server...")
             download_file(DOWNLOAD_URL + "/jdt-language-server-" + version + ".tar.gz",
                           tar_path)
-            sublime.status_message("LSP-jdtls: extracting")
+            sublime.status_message("LSP-jdtls: extracting server...")
             tar = tarfile.open(tar_path, "r:gz")
             tar.extractall(tempdir)
             tar.close()
@@ -159,6 +180,8 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
                 absdir = os.path.join(tempdir, dir)
                 if os.path.isdir(absdir):
                     shutil.move(absdir, serverdir(cls.storage_subpath()))
+        sublime.status_message("LSP-jdtls: downloading lombok...")
+        download_file(LOMBOK_URL, lombok_path(cls.storage_subpath()))
 
     def on_open_uri_async(self, uri: DocumentUri, callback: Callable[[str, str, str], None]) -> bool:
         if not uri.startswith("jdt:"):

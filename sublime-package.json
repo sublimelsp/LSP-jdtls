@@ -22,6 +22,12 @@
                       "description": "Specifies the folder path to the JDK (11 or more recent) used to launch the Java Language Server.\nOn Windows, backslashes must be escaped, i.e.\n\"java.home\":\"C:\\\\Program Files\\\\Java\\\\jdk11.0_8\"",
                       "scope": "machine-overridable"
                     },
+                    "jdtls.enableLombok": {
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Enables Lombok support",
+                      "scope": "window"
+                    },
                     "java.jdt.ls.vmargs": {
                       "type": [
                         "string",

@@ -47,6 +47,8 @@
         // the Java Language Server. Leave null to use the JAVA_HOME environment variable,
         // or "java" from your $PATH as a last resort.
         "java.home": null,
+        // Enables Lombok support
+        "jdtls.enableLombok": false,
         // Enable/disable the 'auto build'
         "java.autobuild.enabled": true,
         // Generate method comments when generating the methods.

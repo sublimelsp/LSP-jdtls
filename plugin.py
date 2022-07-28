@@ -25,7 +25,7 @@ from LSP.plugin.core.views import text_document_identifier
 
 
 DOWNLOAD_URL = "http://download.eclipse.org/jdtls/snapshots"
-DEFAULT_VERSION = "1.12.0-202206011637"
+DEFAULT_VERSION = "1.14.0-202207211651"
 SETTINGS_FILENAME = "LSP-jdtls.sublime-settings"
 STORAGE_DIR = 'LSP-jdtls'
 SERVER_DIR = "server"

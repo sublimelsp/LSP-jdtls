@@ -121,7 +121,7 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         if configuration.settings.get("jdtls.enableLombok") and javaagent_arg not in configuration.command:
             jar_index = configuration.command.index("-jar")
             configuration.command.insert(jar_index, javaagent_arg)
-        elif javaagent_arg in configuration.command:
+        elif not configuration.settings.get("jdtls.enableLombok") and javaagent_arg in configuration.command:
             configuration.command.remove(javaagent_arg)
         return None
 

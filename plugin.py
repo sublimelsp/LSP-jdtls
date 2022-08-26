@@ -26,7 +26,7 @@ from LSP.plugin.core.views import text_document_identifier
 
 
 DOWNLOAD_URL = "http://download.eclipse.org/jdtls/snapshots"
-LOMBOK_URL = "https://projectlombok.org/downloads/lombok.jar"
+LOMBOK_URL = "https://repo1.maven.org/maven2/org/projectlombok/lombok/1.18.24/lombok-1.18.24.jar"
 DEFAULT_VERSION = "1.14.0-202207211651"
 SETTINGS_FILENAME = "LSP-jdtls.sublime-settings"
 STORAGE_DIR = 'LSP-jdtls'

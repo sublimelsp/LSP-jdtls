@@ -21,7 +21,7 @@ from LSP.plugin.core.edit import apply_workspace_edit
 from LSP.plugin.core.edit import parse_workspace_edit
 from LSP.plugin.core.protocol import DocumentUri, WorkspaceFolder
 from LSP.plugin.core.protocol import ExecuteCommandParams
-from LSP.plugin.core.registry import LspTextCommand
+from LSP.plugin.core.registry import LspWindowCommand, LspTextCommand
 from LSP.plugin.core.views import location_to_encoded_filename
 from LSP.plugin.core.views import text_document_identifier
 
@@ -282,13 +282,13 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         session.window.status_message(message)
 
 
-class LspJdtlsStartDebugSession(LspTextCommand):
+class LspJdtlsStartDebugSession(LspWindowCommand):
     """Connector to Debugger."""
 
     session_name = SESSION_NAME
 
-    def run(self, edit, id):
-        session = self.session_by_name(SESSION_NAME)
+    def run(self, id):
+        session = self.session()
         if not session:
             return
         builder = {}
@@ -303,7 +303,7 @@ class LspJdtlsStartDebugSession(LspTextCommand):
         )
 
     def _resolve_mainclass(self, builder, response):
-        session = self.session_by_name(SESSION_NAME)
+        session = self.session()
         if not session:
             return
 
@@ -325,7 +325,7 @@ class LspJdtlsStartDebugSession(LspTextCommand):
         )
 
     def _resolve_classpath(self, builder, response):
-        session = self.session_by_name(SESSION_NAME)
+        session = self.session()
         if not session:
             return
         builder["modulePaths"] = response[0]
@@ -356,7 +356,7 @@ class LspJdtlsStartDebugSession(LspTextCommand):
         )
 
     def _enable_preview(self, builder, response):
-        session = self.session_by_name(SESSION_NAME)
+        session = self.session()
         if not session:
             return
 
@@ -373,7 +373,7 @@ class LspJdtlsStartDebugSession(LspTextCommand):
         self._send_response(builder)
 
     def _send_response(self, builder):
-        window = self.view.window()
+        window = self.window
         if window is None:
             return
         window.run_command("debugger_lsp_jdtls_start_debugging_response", builder)

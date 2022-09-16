@@ -1,6 +1,13 @@
 {
     // We start this language server when we open java files.
     "selector": "source.java",
+    // Declares what URI schemes this server attaches to.
+    "schemes": [
+        // regular files on disk
+        "file",
+        // opened by a DAP-compatible debugger
+        "jdt"
+    ],
     // The startup command.
     "command": [
         "${java_executable}",
@@ -9,6 +16,8 @@
         "java.base/java.util=ALL-UNNAMED",
         "--add-opens",
         "java.base/java.lang=ALL-UNNAMED",
+        "--add-opens",
+        "java.base/sun.nio.fs=ALL-UNNAMED",
         "-Declipse.application=org.eclipse.jdt.ls.core.id1",
         "-Dosgi.bundles.defaultStartLevel=4",
         "-Declipse.product=org.eclipse.jdt.ls.core.product",
@@ -28,7 +37,13 @@
         "-data",
         "${datadir}"
     ],
-    // The jdtls version. "" for latest snapshot. Must be formatted like "0.71.0-202103052234" matching http://download.eclipse.org/jdtls/snapshots/.
+    "initializationOptions": {
+        "bundles": [
+            "${debug_plugin_path}"
+        ]
+    },
+    // Overwrite the jdtls version. An empty string uses the latest release that was tested by the LSP-jdtls developers. 
+    // Must be formatted like "0.71.0-202103052234" matching http://download.eclipse.org/jdtls/snapshots/.
     // Restart sublime after changing this setting
     "version": "",
     // The server-specific settings.
@@ -37,6 +52,8 @@
         // the Java Language Server. Leave null to use the JAVA_HOME environment variable,
         // or "java" from your $PATH as a last resort.
         "java.home": null,
+        // Enables Lombok support
+        "jdtls.enableLombok": false,
         // Enable/disable the 'auto build'
         "java.autobuild.enabled": true,
         // Generate method comments when generating the methods.

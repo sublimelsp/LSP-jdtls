@@ -25,14 +25,17 @@ from LSP.plugin.core.views import location_to_encoded_filename
 from LSP.plugin.core.views import text_document_identifier
 
 
-DOWNLOAD_URL = "http://download.eclipse.org/jdtls/snapshots"
-LOMBOK_URL = "https://repo1.maven.org/maven2/org/projectlombok/lombok/1.18.24/lombok-1.18.24.jar"
-DEFAULT_VERSION = "1.14.0-202207211651"
+LOMBOK_VERSION = "1.18.24"
+LOMBOK_URL = "https://repo1.maven.org/maven2/org/projectlombok/lombok/{version}/lombok-{version}.jar"
+DEBUG_PLUGIN_VERSION = "0.40.0"
+DEBUG_PLUGIN_URL = "https://repo1.maven.org/maven2/com/microsoft/java/com.microsoft.java.debug.plugin/{version}/com.microsoft.java.debug.plugin-{version}.jar"
+JDTLS_VERSION = "1.14.0-202207211651"
+JDTLS_URL = "http://download.eclipse.org/jdtls/snapshots/jdt-language-server-{version}.tar.gz"
 SETTINGS_FILENAME = "LSP-jdtls.sublime-settings"
-STORAGE_DIR = 'LSP-jdtls'
+STORAGE_DIR = "LSP-jdtls"
+SESSION_NAME = "jdtls"
 SERVER_DIR = "server"
 DATA_DIR = "data"
-SESSION_NAME = "jdtls"
 
 
 def serverversion() -> str:
@@ -42,10 +45,10 @@ def serverversion() -> str:
     and no server is available offline.
     """
     settings = sublime.load_settings(SETTINGS_FILENAME)
-    version = settings.get('version')
+    version = settings.get("version")
     if version:
         return version
-    return DEFAULT_VERSION
+    return JDTLS_VERSION
 
 
 def serverdir(storage_path) -> str:
@@ -70,13 +73,25 @@ def _jdtls_platform() -> str:
 
 
 def download_file(url, file_name) -> None:
-    with urlopen(url) as response, open(file_name, 'wb') as out_file:
+    with urlopen(url) as response, open(file_name, "wb") as out_file:
         shutil.copyfileobj(response, out_file)
 
 
 def lombok_path(storage_path):
     servers_dir = os.path.join(storage_path, SERVER_DIR)
-    return os.path.join(servers_dir, "lombok.jar")
+    return os.path.join(
+        servers_dir, "lombok-{version}.jar".format(version=DEBUG_PLUGIN_VERSION)
+    )
+
+
+def debug_plugin_path(storage_path):
+    servers_dir = os.path.join(storage_path, SERVER_DIR)
+    return os.path.join(
+        servers_dir,
+        "com.microsoft.java.debug.plugin-{version}.jar".format(
+            version=DEBUG_PLUGIN_VERSION
+        ),
+    )
 
 
 class EclipseJavaDevelopmentTools(AbstractPlugin):
@@ -100,28 +115,44 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
             java_executable = "java"
 
         launcher_version = ""
-        for file in os.listdir(os.path.join(serverdir(cls.storage_subpath()), "plugins")):
+        for file in os.listdir(
+            os.path.join(serverdir(cls.storage_subpath()), "plugins")
+        ):
             match = re.search("org.eclipse.equinox.launcher_(.*).jar", file)
             if match:
                 launcher_version = match.group(1)
         return {
             "java_executable": java_executable,
-            "watch_parent_process": "false" if sublime.platform() == "windows" else "true",
+            "watch_parent_process": "false"
+            if sublime.platform() == "windows"
+            else "true",
             "jdtls_platform": _jdtls_platform(),
             "serverdir": serverdir(cls.storage_subpath()),
             "datadir": os.path.join(cls.storage_subpath(), DATA_DIR),
-            "launcher_version": launcher_version
+            "launcher_version": launcher_version,
+            "debug_plugin_path": debug_plugin_path(cls.storage_subpath()),
         }
 
     @classmethod
-    def on_pre_start(cls, window: sublime.Window, initiating_view: sublime.View,
-                     workspace_folders: List[WorkspaceFolder], configuration: ClientConfig) -> Optional[str]:
+    def on_pre_start(
+        cls,
+        window: sublime.Window,
+        initiating_view: sublime.View,
+        workspace_folders: List[WorkspaceFolder],
+        configuration: ClientConfig,
+    ) -> Optional[str]:
         javaagent_arg = "-javaagent:" + lombok_path(cls.storage_subpath())
         # Prevent adding the argument multiple times
-        if configuration.settings.get("jdtls.enableLombok") and javaagent_arg not in configuration.command:
+        if (
+            configuration.settings.get("jdtls.enableLombok")
+            and javaagent_arg not in configuration.command
+        ):
             jar_index = configuration.command.index("-jar")
             configuration.command.insert(jar_index, javaagent_arg)
-        elif not configuration.settings.get("jdtls.enableLombok") and javaagent_arg in configuration.command:
+        elif (
+            not configuration.settings.get("jdtls.enableLombok")
+            and javaagent_arg in configuration.command
+        ):
             configuration.command.remove(javaagent_arg)
         return None
 
@@ -133,6 +164,7 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
     def needs_update_or_installation(cls) -> bool:
         result = not os.path.isdir(serverdir(cls.storage_subpath()))
         result |= not os.path.isfile(lombok_path(cls.storage_subpath()))
+        result |= not os.path.isfile(debug_plugin_path(cls.storage_subpath()))
         return result
 
     @classmethod
@@ -142,11 +174,11 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         if os.path.isdir(basedir):
             shutil.rmtree(basedir)
         os.makedirs(basedir)
+
         with tempfile.TemporaryDirectory() as tempdir:
             tar_path = os.path.join(tempdir, "server.tar.gz")
             sublime.status_message("LSP-jdtls: downloading server...")
-            download_file(DOWNLOAD_URL + "/jdt-language-server-" + version + ".tar.gz",
-                          tar_path)
+            download_file(JDTLS_URL.format(version=version), tar_path)
             sublime.status_message("LSP-jdtls: extracting server...")
             tar = tarfile.open(tar_path, "r:gz")
             tar.extractall(tempdir)
@@ -154,11 +186,19 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
             for dir in os.listdir(tempdir):
                 absdir = os.path.join(tempdir, dir)
                 if os.path.isdir(absdir):
-                    shutil.move(absdir, serverdir(cls.storage_subpath()))
-        sublime.status_message("LSP-jdtls: downloading lombok...")
-        download_file(LOMBOK_URL, lombok_path(cls.storage_subpath()))
+                    shutil.move(absdir, serverdir(basedir))
 
-    def on_open_uri_async(self, uri: DocumentUri, callback: Callable[[str, str, str], None]) -> bool:
+        sublime.status_message("LSP-jdtls: downloading lombok...")
+        download_file(LOMBOK_URL.format(version=LOMBOK_VERSION), lombok_path(basedir))
+        sublime.status_message("LSP-jdtls: downloading debug plugin...")
+        download_file(
+            DEBUG_PLUGIN_URL.format(version=DEBUG_PLUGIN_VERSION),
+            debug_plugin_path(basedir),
+        )
+
+    def on_open_uri_async(
+        self, uri: DocumentUri, callback: Callable[[str, str, str], None]
+    ) -> bool:
         if not uri.startswith("jdt:"):
             return False
         session = self.weaksession()
@@ -168,13 +208,19 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         # https://github.com/redhat-developer/vscode-java/blob/9f32875a67352487f5c414bb7fef04c9b00af89d/src/providerDispatcher.ts#L61-L76
         # https://github.com/redhat-developer/vscode-java/blob/9f32875a67352487f5c414bb7fef04c9b00af89d/src/providerDispatcher.ts#L27-L28
         session.send_request_async(
-            Request("java/classFileContents", text_document_identifier(uri), progress=True),
+            Request(
+                "java/classFileContents", text_document_identifier(uri), progress=True
+            ),
             lambda resp: callback(uri, resp, "Packages/Java/Java.sublime-syntax"),
-            lambda err: callback("ERROR", str(err), "Packages/Text/Plain text.tmLanguage")
+            lambda err: callback(
+                "ERROR", str(err), "Packages/Text/Plain text.tmLanguage"
+            ),
         )
         return True
 
-    def on_pre_server_command(self, command: Mapping[str, Any], done: Callable[[], None]) -> bool:
+    def on_pre_server_command(
+        self, command: Mapping[str, Any], done: Callable[[], None]
+    ) -> bool:
         session = self.weaksession()
         if not session:
             return False
@@ -194,14 +240,16 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
             return True
         return False
 
-    def _show_quick_panel(self, session: Session, references: List[Dict[str, Any]]) -> None:
+    def _show_quick_panel(
+        self, session: Session, references: List[Dict[str, Any]]
+    ) -> None:
         self.reflist = [location_to_encoded_filename(r) for r in references]
         session.window.show_quick_panel(
             self.reflist,
             self._on_ref_choice,
             sublime.KEEP_OPEN_ON_FOCUS_LOST,
             0,
-            self._on_ref_highlight
+            self._on_ref_highlight,
         )
 
     def _on_ref_choice(self, index: int) -> None:
@@ -214,7 +262,11 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         if index != -1:
             session = self.weaksession()
             if session:
-                flags = sublime.ENCODED_POSITION | sublime.TRANSIENT if transient else sublime.ENCODED_POSITION
+                flags = (
+                    sublime.ENCODED_POSITION | sublime.TRANSIENT
+                    if transient
+                    else sublime.ENCODED_POSITION
+                )
                 session.window.open_file(self.reflist[index], flags)
 
     # notification and request handlers
@@ -237,14 +289,21 @@ class LspJdtlsStartDebugSession(LspTextCommand):
         session = self.session_by_name(SESSION_NAME)
         if not session:
             return
-        command = {"command": "vscode.java.startDebugSession"}  # type: ExecuteCommandParams
-        session.execute_command(command, False).then(lambda resp: self.handle_response(id, resp))
+        command = {
+            "command": "vscode.java.startDebugSession"
+        }  # type: ExecuteCommandParams
+        session.execute_command(command, False).then(
+            lambda resp: self.handle_response(id, resp)
+        )
 
     def handle_response(self, id, response):
         window = self.view.window()
         if window is None:
             return
-        window.run_command('debugger_lsp_jdtls_start_debugging_response', {'id': id, 'port': response, 'error': None})
+        window.run_command(
+            "debugger_lsp_jdtls_start_debugging_response",
+            {"id": id, "port": response, "error": None},
+        )
 
 
 class LspJdtlsBuildWorkspace(LspTextCommand):
@@ -256,7 +315,11 @@ class LspJdtlsBuildWorkspace(LspTextCommand):
         if not session:
             return
         params = True
-        session.send_request(Request("java/buildWorkspace", params), self.on_response_async, self.on_error_async)
+        session.send_request(
+            Request("java/buildWorkspace", params),
+            self.on_response_async,
+            self.on_error_async,
+        )
 
     def on_response_async(self, response):
         window = self.view.window()
@@ -283,7 +346,9 @@ class LspJdtlsRefreshWorkspace(LspTextCommand):
         session = self.session_by_name(SESSION_NAME)
         if not session:
             return
-        command = {"command": "vscode.java.resolveBuildFiles"}  # type: ExecuteCommandParams
+        command = {
+            "command": "vscode.java.resolveBuildFiles"
+        }  # type: ExecuteCommandParams
         session.execute_command(command, False).then(self._send_update_requests)
 
     def _send_update_requests(self, files):
@@ -292,7 +357,9 @@ class LspJdtlsRefreshWorkspace(LspTextCommand):
             return
         for uri in files:
             params = {"uri": uri}
-            session.send_notification(Notification("java/projectConfigurationUpdate", params))
+            session.send_notification(
+                Notification("java/projectConfigurationUpdate", params)
+            )
 
 
 def plugin_loaded() -> None:

@@ -178,7 +178,7 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         with tempfile.TemporaryDirectory() as tempdir:
             tar_path = os.path.join(tempdir, "server.tar.gz")
             sublime.status_message("LSP-jdtls: downloading server...")
-            download_file(JDTLS_URL.format(version), tar_path)
+            download_file(JDTLS_URL.format(version=version), tar_path)
             sublime.status_message("LSP-jdtls: extracting server...")
             tar = tarfile.open(tar_path, "r:gz")
             tar.extractall(tempdir)

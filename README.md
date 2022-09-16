@@ -27,3 +27,7 @@ jdtls can do a lot of cool things, like
 - formatting
 - find references
 - goto def
+
+## Licenses
+
+The [Java Debug Plugin](https://github.com/microsoft/java-debug) is licensed under [Eclipse Public License 1.0](https://github.com/Microsoft/java-debug/blob/master/LICENSE.txt).

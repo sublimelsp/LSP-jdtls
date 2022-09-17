@@ -14,7 +14,6 @@ import re
 import shutil
 import tempfile
 import tarfile
-import json
 
 # TODO: Not part of the public API :(
 from LSP.plugin.core.edit import apply_workspace_edit
@@ -244,7 +243,7 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
     def _show_quick_panel(
         self, session: Session, references: List[Dict[str, Any]]
     ) -> None:
-        self.reflist = [location_to_encoded_filename(r) for r in references]
+        self.reflist = [location_to_encoded_filename(r) for r in references]  # type: ignore
         session.window.show_quick_panel(
             self.reflist,
             self._on_ref_choice,
@@ -282,101 +281,37 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         session.window.status_message(message)
 
 
-class LspJdtlsStartDebugSession(LspWindowCommand):
-    """Connector to Debugger."""
+class DebuggerJdtlsBridgeRequest(LspWindowCommand):
+    """Connector bridge to Debugger allowing to send requests to the language server.
+
+    The response is sent back using the specified callback_command (window command).
+    The callback command must have the interface def callback(id, error, resp),
+    if error is not None then it contains a reason else resp is not None.
+    """
 
     session_name = SESSION_NAME
 
-    def run(self, id):
+    def run(self, id, callback_command, method, params, progress=False):
         session = self.session()
+        response_args = {"id": id, "error": None, "resp": None}
         if not session:
-            return
-        builder = {}
-        builder["id"] = id
-        builder["error"] = None
-
-        command = {
-            "command": "vscode.java.resolveMainClass"
-        }  # type: ExecuteCommandParams
-        session.execute_command(command, False).then(
-            lambda response: self._resolve_mainclass(builder, response)
-        )
-
-    def _resolve_mainclass(self, builder, response):
-        session = self.session()
-        if not session:
+            response_args["error"] = "No JDTLS session found."
+            self.window.run_command(callback_command, response_args)
             return
 
-        if not response or "mainClass" not in response[0]:
-            builder["error"] = "Failed to resolve main class"
-            self._send_response(builder)
+        def _on_request_success(resp):
+            response_args["resp"] = resp
+            self.window.run_command(callback_command, response_args)
 
-        builder["mainClass"] = response[0]["mainClass"]
-        builder["projectName"] = (
-            response[0]["projectName"] if "projectName" in response[0] else ""
+        def _on_request_error(err):
+            response_args["error"] = str(err)
+            self.window.run_command(callback_command, response_args)
+
+        session.send_request_async(
+            Request(method, params, progress=progress),
+            _on_request_success,
+            _on_request_error,
         )
-
-        command = {
-            "command": "vscode.java.resolveClasspath",
-            "arguments": [builder["mainClass"], builder["projectName"]],
-        }  # type: ExecuteCommandParams
-        session.execute_command(command, False).then(
-            lambda response: self._resolve_classpath(builder, response)
-        )
-
-    def _resolve_classpath(self, builder, response):
-        session = self.session()
-        if not session:
-            return
-        builder["modulePaths"] = response[0]
-        builder["classPaths"] = response[1]
-
-        if not builder["modulePaths"] and not builder["classPaths"]:
-            builder["error"] = "Failed to resolve classpaths/modulepaths"
-            self._send_response(builder)
-
-        # See https://github.com/microsoft/vscode-java-debug/blob/b2a48319952b1af8a4a328fc95d2891de947df94/src/configurationProvider.ts#L297
-        command = {
-            "command": "vscode.java.checkProjectSettings",
-            "arguments": [
-                json.dumps(
-                    {
-                        "className": builder["mainClass"],
-                        "projectName": builder["projectName"],
-                        "inheritedOptions": True,
-                        "expectedOptions": {
-                            "org.eclipse.jdt.core.compiler.problem.enablePreviewFeatures": "enabled"
-                        },
-                    }
-                )
-            ],
-        }  # type: ExecuteCommandParams
-        session.execute_command(command, False).then(
-            lambda response: self._enable_preview(builder, response)
-        )
-
-    def _enable_preview(self, builder, response):
-        session = self.session()
-        if not session:
-            return
-
-        builder["enablePreview"] = response
-        command = {
-            "command": "vscode.java.startDebugSession"
-        }  # type: ExecuteCommandParams
-        session.execute_command(command, False).then(
-            lambda response: self._start_debug_session(builder, response)
-        )
-
-    def _start_debug_session(self, builder, response):
-        builder["port"] = response
-        self._send_response(builder)
-
-    def _send_response(self, builder):
-        window = self.window
-        if window is None:
-            return
-        window.run_command("debugger_lsp_jdtls_start_debugging_response", builder)
 
 
 class LspJdtlsBuildWorkspace(LspTextCommand):

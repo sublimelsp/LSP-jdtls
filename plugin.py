@@ -20,7 +20,7 @@ from LSP.plugin.core.edit import apply_workspace_edit
 from LSP.plugin.core.edit import parse_workspace_edit
 from LSP.plugin.core.protocol import DocumentUri, WorkspaceFolder
 from LSP.plugin.core.protocol import ExecuteCommandParams
-from LSP.plugin.core.registry import LspTextCommand
+from LSP.plugin.core.registry import LspWindowCommand, LspTextCommand
 from LSP.plugin.core.views import location_to_encoded_filename
 from LSP.plugin.core.views import text_document_identifier
 
@@ -243,7 +243,7 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
     def _show_quick_panel(
         self, session: Session, references: List[Dict[str, Any]]
     ) -> None:
-        self.reflist = [location_to_encoded_filename(r) for r in references]
+        self.reflist = [location_to_encoded_filename(r) for r in references]  # type: ignore
         session.window.show_quick_panel(
             self.reflist,
             self._on_ref_choice,
@@ -281,28 +281,36 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         session.window.status_message(message)
 
 
-class LspJdtlsStartDebugSession(LspTextCommand):
+class DebuggerJdtlsBridgeRequest(LspWindowCommand):
+    """Connector bridge to Debugger allowing to send requests to the language server.
+
+    The response is sent back using the specified callback_command (window command).
+    The callback command must have the interface def callback(id, error, resp),
+    if error is not None then it contains a reason else resp is not None.
+    """
 
     session_name = SESSION_NAME
 
-    def run(self, edit, id):
-        session = self.session_by_name(SESSION_NAME)
+    def run(self, id, callback_command, method, params, progress=False):
+        session = self.session()
+        response_args = {"id": id, "error": None, "resp": None}
         if not session:
+            response_args["error"] = "No JDTLS session found."
+            self.window.run_command(callback_command, response_args)
             return
-        command = {
-            "command": "vscode.java.startDebugSession"
-        }  # type: ExecuteCommandParams
-        session.execute_command(command, False).then(
-            lambda resp: self.handle_response(id, resp)
-        )
 
-    def handle_response(self, id, response):
-        window = self.view.window()
-        if window is None:
-            return
-        window.run_command(
-            "debugger_lsp_jdtls_start_debugging_response",
-            {"id": id, "port": response, "error": None},
+        def _on_request_success(resp):
+            response_args["resp"] = resp
+            self.window.run_command(callback_command, response_args)
+
+        def _on_request_error(err):
+            response_args["error"] = str(err)
+            self.window.run_command(callback_command, response_args)
+
+        session.send_request_async(
+            Request(method, params, progress=progress),
+            _on_request_success,
+            _on_request_error,
         )
 
 

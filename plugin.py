@@ -4,6 +4,7 @@ from LSP.plugin import Session
 from LSP.plugin import unregister_plugin
 from LSP.plugin import Request
 from LSP.plugin import Notification
+from LSP.plugin import WorkspaceFolder
 from LSP.plugin.core.types import ClientConfig
 from LSP.plugin.core.typing import Optional, Any, List, Dict, Mapping, Callable
 
@@ -18,7 +19,7 @@ import tarfile
 # TODO: Not part of the public API :(
 from LSP.plugin.core.edit import apply_workspace_edit
 from LSP.plugin.core.edit import parse_workspace_edit
-from LSP.plugin.core.protocol import DocumentUri, WorkspaceFolder
+from LSP.plugin.core.protocol import DocumentUri
 from LSP.plugin.core.protocol import ExecuteCommandParams
 from LSP.plugin.core.registry import LspWindowCommand, LspTextCommand
 from LSP.plugin.core.views import location_to_encoded_filename

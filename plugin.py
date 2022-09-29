@@ -27,6 +27,8 @@ from LSP.plugin.core.registry import LspWindowCommand, LspTextCommand
 from LSP.plugin.core.views import location_to_encoded_filename
 from LSP.plugin.core.views import text_document_identifier
 
+from .modules.client_command_handler import ask_client_for_choice
+
 # fmt: off
 LOMBOK_VERSION = "1.18.24"
 LOMBOK_URL = "https://repo1.maven.org/maven2/org/projectlombok/lombok/{version}/lombok-{version}.jar"
@@ -343,6 +345,23 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         if not message:
             return
         session.window.status_message(message)
+
+    def m_workspace_executeClientCommand(self, params: Any, request_id) -> None:
+        session = self.weaksession()
+        if not session:
+            return
+
+        command_name = params["command"]
+        arguments = params["arguments"]
+
+        client_command_handler = {
+            "_java.test.askClientForChoice": ask_client_for_choice
+        }
+
+        if command_name in client_command_handler:
+            client_command_handler[command_name](session, request_id, *arguments)
+        else:
+            print("{}: no command handler for client command {}".format(SESSION_NAME, command_name))
 
 
 class DebuggerJdtlsBridgeRequest(LspWindowCommand):

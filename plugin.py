@@ -6,7 +6,7 @@ from LSP.plugin import Request
 from LSP.plugin import Notification
 from LSP.plugin import WorkspaceFolder
 from LSP.plugin.core.types import ClientConfig
-from LSP.plugin.core.typing import Optional, Any, List, Dict, Mapping, Callable
+from LSP.plugin.core.typing import Optional, Any, List, Dict, Mapping, Callable, Union
 
 import os
 import sublime
@@ -15,6 +15,7 @@ import re
 import shutil
 import tempfile
 import tarfile
+import zipfile
 
 # TODO: Not part of the public API :(
 from LSP.plugin.core.edit import apply_workspace_edit
@@ -31,34 +32,20 @@ LOMBOK_URL = "https://repo1.maven.org/maven2/org/projectlombok/lombok/{version}/
 DEBUG_PLUGIN_VERSION = "0.40.0"
 DEBUG_PLUGIN_URL = "https://repo1.maven.org/maven2/com/microsoft/java/com.microsoft.java.debug.plugin/{version}/com.microsoft.java.debug.plugin-{version}.jar"
 JDTLS_VERSION = "1.14.0-202207211651"
-JDTLS_URL = "http://download.eclipse.org/jdtls/snapshots/jdt-language-server-{version}.tar.gz"
+JDTLS_URL = (
+    "http://download.eclipse.org/jdtls/snapshots/jdt-language-server-{version}.tar.gz"
+)
+
 SETTINGS_FILENAME = "LSP-jdtls.sublime-settings"
 STORAGE_DIR = "LSP-jdtls"
 SESSION_NAME = "jdtls"
-SERVER_DIR = "server"
+INSTALL_DIR = "server"
 DATA_DIR = "data"
 
 
 def serverversion() -> str:
-    """
-    Returns the version of to use. Can be None if
-    no version is set in settings and no connection is available and
-    and no server is available offline.
-    """
-    settings = sublime.load_settings(SETTINGS_FILENAME)
-    version = settings.get("version")
-    if version:
-        return version
-    return JDTLS_VERSION
-
-
-def serverdir(storage_path) -> str:
-    """
-    The directory of the server.
-    """
-    version = serverversion()
-    servers_dir = os.path.join(storage_path, SERVER_DIR)
-    return os.path.join(servers_dir, version)
+    version = sublime.load_settings(SETTINGS_FILENAME).get("version")
+    return version or JDTLS_VERSION
 
 
 def _jdtls_platform() -> str:
@@ -73,26 +60,42 @@ def _jdtls_platform() -> str:
         raise ValueError("unknown platform: {}".format(p))
 
 
-def download_file(url, file_name) -> None:
+def download_file(url: str, file_name: str) -> None:
     with urlopen(url) as response, open(file_name, "wb") as out_file:
         shutil.copyfileobj(response, out_file)
 
 
-def lombok_path(storage_path):
-    servers_dir = os.path.join(storage_path, SERVER_DIR)
-    return os.path.join(
-        servers_dir, "lombok-{version}.jar".format(version=DEBUG_PLUGIN_VERSION)
-    )
+def _extract_file(
+    url: str,
+    path: str,
+    open_function: Union[
+        Callable[[str], zipfile.ZipFile], Callable[[str], tarfile.TarFile]
+    ],
+):
+    with tempfile.TemporaryDirectory() as download_dir:
+        compressed_file = os.path.join(download_dir, "compressed_file")
+        download_file(url, compressed_file)
+        uncompress_dir = os.path.join(download_dir, "uncompress_dir")
+        os.makedirs(uncompress_dir)
+        with open_function(compressed_file) as compressed_file:
+            compressed_file.extractall(uncompress_dir)
+        shutil.move(uncompress_dir, path)
 
 
-def debug_plugin_path(storage_path):
-    servers_dir = os.path.join(storage_path, SERVER_DIR)
-    return os.path.join(
-        servers_dir,
-        "com.microsoft.java.debug.plugin-{version}.jar".format(
-            version=DEBUG_PLUGIN_VERSION
-        ),
-    )
+def extract_zip(url: str, path: str):
+    """
+    Extracts the zip at `url` to `path`.
+    The zip is extracted into `path` if it already exists.
+    """
+    _extract_file(url, path, lambda x: zipfile.ZipFile(x, "r"))
+
+
+def extract_tar(url: str, path: str):
+    """
+    Extracts the tar at `url` to `path`.
+    The tar is extracted into `path` if it already exists.
+    """
+    _extract_file(url, path, lambda x: tarfile.open(x, "r:gz"))
 
 
 class EclipseJavaDevelopmentTools(AbstractPlugin):
@@ -100,9 +103,68 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
     def name(cls) -> str:
         return SESSION_NAME
 
+    # Path definitions
+    ##################
+
     @classmethod
     def storage_subpath(cls) -> str:
         return os.path.join(cls.storage_path(), STORAGE_DIR)
+
+    @classmethod
+    def install_path(cls) -> str:
+        return os.path.join(cls.storage_subpath(), INSTALL_DIR)
+
+    @classmethod
+    def jdtls_path(cls) -> str:
+        version = serverversion()
+        return os.path.join(cls.install_path(), version)
+
+    @classmethod
+    def lombok_jar_path(cls) -> str:
+        return os.path.join(
+            cls.install_path(),
+            "lombok-{version}.jar".format(version=DEBUG_PLUGIN_VERSION),
+        )
+
+    @classmethod
+    def debug_plugin_jar_path(cls) -> str:
+        return os.path.join(
+            cls.install_path(),
+            "com.microsoft.java.debug.plugin-{version}.jar".format(
+                version=DEBUG_PLUGIN_VERSION
+            ),
+        )
+
+    # Installation and Updates
+    ##########################
+
+    @classmethod
+    def needs_update_or_installation(cls) -> bool:
+        result = not os.path.isdir(cls.jdtls_path())
+        result |= not os.path.isfile(cls.lombok_jar_path())
+        result |= not os.path.isfile(cls.debug_plugin_jar_path())
+        return result
+
+    @classmethod
+    def install_or_update(cls) -> None:
+        version = serverversion()
+        basedir = cls.storage_subpath()
+        if os.path.isdir(basedir):
+            shutil.rmtree(basedir)
+        os.makedirs(basedir)
+
+        sublime.status_message("LSP-jdtls: downloading jdtls...")
+        extract_tar(JDTLS_URL.format(version=version), cls.jdtls_path())
+        sublime.status_message("LSP-jdtls: downloading lombok...")
+        download_file(LOMBOK_URL.format(version=LOMBOK_VERSION), cls.lombok_jar_path())
+        sublime.status_message("LSP-jdtls: downloading debug plugin...")
+        download_file(
+            DEBUG_PLUGIN_URL.format(version=DEBUG_PLUGIN_VERSION),
+            cls.debug_plugin_jar_path(),
+        )
+
+    # Server configuration
+    ######################
 
     @classmethod
     def additional_variables(cls) -> Optional[Dict[str, str]]:
@@ -116,9 +178,7 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
             java_executable = "java"
 
         launcher_version = ""
-        for file in os.listdir(
-            os.path.join(serverdir(cls.storage_subpath()), "plugins")
-        ):
+        for file in os.listdir(os.path.join(cls.jdtls_path(), "plugins")):
             match = re.search("org.eclipse.equinox.launcher_(.*).jar", file)
             if match:
                 launcher_version = match.group(1)
@@ -128,10 +188,10 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
             if sublime.platform() == "windows"
             else "true",
             "jdtls_platform": _jdtls_platform(),
-            "serverdir": serverdir(cls.storage_subpath()),
+            "serverdir": cls.jdtls_path(),
             "datadir": os.path.join(cls.storage_subpath(), DATA_DIR),
             "launcher_version": launcher_version,
-            "debug_plugin_path": debug_plugin_path(cls.storage_subpath()),
+            "debug_plugin_path": cls.debug_plugin_jar_path(),
         }
 
     @classmethod
@@ -142,7 +202,7 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         workspace_folders: List[WorkspaceFolder],
         configuration: ClientConfig,
     ) -> Optional[str]:
-        javaagent_arg = "-javaagent:" + lombok_path(cls.storage_subpath())
+        javaagent_arg = "-javaagent:" + cls.lombok_jar_path()
         # Prevent adding the argument multiple times
         if (
             configuration.settings.get("jdtls.enableLombok")
@@ -160,42 +220,6 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.reflist = []  # type: List[str]
-
-    @classmethod
-    def needs_update_or_installation(cls) -> bool:
-        result = not os.path.isdir(serverdir(cls.storage_subpath()))
-        result |= not os.path.isfile(lombok_path(cls.storage_subpath()))
-        result |= not os.path.isfile(debug_plugin_path(cls.storage_subpath()))
-        return result
-
-    @classmethod
-    def install_or_update(cls) -> None:
-        version = serverversion()
-        basedir = cls.storage_subpath()
-        if os.path.isdir(basedir):
-            shutil.rmtree(basedir)
-        os.makedirs(basedir)
-
-        with tempfile.TemporaryDirectory() as tempdir:
-            tar_path = os.path.join(tempdir, "server.tar.gz")
-            sublime.status_message("LSP-jdtls: downloading server...")
-            download_file(JDTLS_URL.format(version=version), tar_path)
-            sublime.status_message("LSP-jdtls: extracting server...")
-            tar = tarfile.open(tar_path, "r:gz")
-            tar.extractall(tempdir)
-            tar.close()
-            for dir in os.listdir(tempdir):
-                absdir = os.path.join(tempdir, dir)
-                if os.path.isdir(absdir):
-                    shutil.move(absdir, serverdir(basedir))
-
-        sublime.status_message("LSP-jdtls: downloading lombok...")
-        download_file(LOMBOK_URL.format(version=LOMBOK_VERSION), lombok_path(basedir))
-        sublime.status_message("LSP-jdtls: downloading debug plugin...")
-        download_file(
-            DEBUG_PLUGIN_URL.format(version=DEBUG_PLUGIN_VERSION),
-            debug_plugin_path(basedir),
-        )
 
     def on_open_uri_async(
         self, uri: DocumentUri, callback: Callable[[str, str, str], None]
@@ -218,6 +242,9 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
             ),
         )
         return True
+
+    # Custom command handling
+    #########################
 
     def on_pre_server_command(
         self, command: Mapping[str, Any], done: Callable[[], None]

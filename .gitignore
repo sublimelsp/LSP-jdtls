@@ -1,2 +1,3 @@
 jdt-language-server-*.tar.gz
 out/
+pyrightconfig.json

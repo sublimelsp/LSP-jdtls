@@ -16,6 +16,7 @@ import shutil
 import tempfile
 import tarfile
 import zipfile
+import json
 
 # TODO: Not part of the public API :(
 from LSP.plugin.core.edit import apply_workspace_edit
@@ -26,21 +27,22 @@ from LSP.plugin.core.registry import LspWindowCommand, LspTextCommand
 from LSP.plugin.core.views import location_to_encoded_filename
 from LSP.plugin.core.views import text_document_identifier
 
-
+# fmt: off
 LOMBOK_VERSION = "1.18.24"
 LOMBOK_URL = "https://repo1.maven.org/maven2/org/projectlombok/lombok/{version}/lombok-{version}.jar"
 DEBUG_PLUGIN_VERSION = "0.40.0"
 DEBUG_PLUGIN_URL = "https://repo1.maven.org/maven2/com/microsoft/java/com.microsoft.java.debug.plugin/{version}/com.microsoft.java.debug.plugin-{version}.jar"
 JDTLS_VERSION = "1.14.0-202207211651"
-JDTLS_URL = (
-    "http://download.eclipse.org/jdtls/snapshots/jdt-language-server-{version}.tar.gz"
-)
+JDTLS_URL = "http://download.eclipse.org/jdtls/snapshots/jdt-language-server-{version}.tar.gz"
+VSCODE_JAVA_TEST_EXTENSION_VERSION = "0.37.1"
+VSCODE_JAVA_TEST_EXTENSION_URL = "https://github.com/microsoft/vscode-java-test/releases/download/{version}/vscjava.vscode-java-test-{version}.vsix"
 
 SETTINGS_FILENAME = "LSP-jdtls.sublime-settings"
 STORAGE_DIR = "LSP-jdtls"
 SESSION_NAME = "jdtls"
 INSTALL_DIR = "server"
 DATA_DIR = "data"
+# fmt: on
 
 
 def _jdtls_version() -> str:
@@ -121,6 +123,15 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         )
 
     @classmethod
+    def vscode_java_test_extension_path(cls) -> str:
+        return os.path.join(
+            cls.install_path(),
+            "vscode-java-test-{version}".format(
+                version=VSCODE_JAVA_TEST_EXTENSION_VERSION
+            ),
+        )
+
+    @classmethod
     def lombok_jar_path(cls) -> str:
         return os.path.join(
             cls.install_path(),
@@ -144,6 +155,7 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         result = not os.path.isdir(cls.jdtls_path())
         result |= not os.path.isfile(cls.lombok_jar_path())
         result |= not os.path.isfile(cls.debug_plugin_jar_path())
+        result |= not os.path.isdir(cls.vscode_java_test_extension_path())
         return result
 
     @classmethod
@@ -154,15 +166,16 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
             shutil.rmtree(basedir)
         os.makedirs(basedir)
 
+        # fmt: off
         sublime.status_message("LSP-jdtls: downloading jdtls...")
         extract_tar(JDTLS_URL.format(version=version), cls.jdtls_path())
         sublime.status_message("LSP-jdtls: downloading lombok...")
         download_file(LOMBOK_URL.format(version=LOMBOK_VERSION), cls.lombok_jar_path())
         sublime.status_message("LSP-jdtls: downloading debug plugin...")
-        download_file(
-            DEBUG_PLUGIN_URL.format(version=DEBUG_PLUGIN_VERSION),
-            cls.debug_plugin_jar_path(),
-        )
+        download_file(DEBUG_PLUGIN_URL.format(version=DEBUG_PLUGIN_VERSION), cls.debug_plugin_jar_path())
+        sublime.status_message("LSP-jdtls: downloading test extension...")
+        extract_zip(VSCODE_JAVA_TEST_EXTENSION_URL.format(version=VSCODE_JAVA_TEST_EXTENSION_VERSION), cls.vscode_java_test_extension_path())
+        # fmt: on
 
     # Server configuration
     ######################
@@ -196,14 +209,12 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         }
 
     @classmethod
-    def on_pre_start(
-        cls,
-        window: sublime.Window,
-        initiating_view: sublime.View,
-        workspace_folders: List[WorkspaceFolder],
-        configuration: ClientConfig,
-    ) -> Optional[str]:
+    def _enable_lombok(cls, configuration: ClientConfig):
+        """
+        Edits the command to enable/disable lombok.
+        """
         javaagent_arg = "-javaagent:" + cls.lombok_jar_path()
+
         # Prevent adding the argument multiple times
         if (
             configuration.settings.get("jdtls.enableLombok")
@@ -216,6 +227,30 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
             and javaagent_arg in configuration.command
         ):
             configuration.command.remove(javaagent_arg)
+
+    @classmethod
+    def _enable_test_extension(cls, configuration: ClientConfig):
+        jarpath = os.path.join(cls.vscode_java_test_extension_path(), "extension/server")
+        with open(os.path.join(cls.vscode_java_test_extension_path(), "extension/package.json"), "r") as package_json:
+            jars = json.load(package_json)["contributes"]["javaExtensions"]
+            bundles = configuration.init_options.get("bundles")
+            for jar in jars:
+                abspath = os.path.join(jarpath, jar[len("./server/"):])
+                if jar.endswith(".jar") and os.path.isfile(abspath):
+                    if abspath not in bundles:
+                        bundles += [abspath]
+            configuration.init_options.set("bundles", bundles)
+
+    @classmethod
+    def on_pre_start(
+        cls,
+        window: sublime.Window,
+        initiating_view: sublime.View,
+        workspace_folders: List[WorkspaceFolder],
+        configuration: ClientConfig,
+    ) -> Optional[str]:
+        cls._enable_lombok(configuration)
+        cls._enable_test_extension(configuration)
         return None
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:

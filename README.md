@@ -31,3 +31,4 @@ jdtls can do a lot of cool things, like
 ## Licenses
 
 The [Java Debug Plugin](https://github.com/microsoft/java-debug) is licensed under [Eclipse Public License 1.0](https://github.com/Microsoft/java-debug/blob/master/LICENSE.txt).
+The [Test Runner for Java](https://github.com/microsoft/vscode-java-test) is licensed under [MIT License](https://github.com/microsoft/vscode-java-test/blob/main/LICENSE.txt)

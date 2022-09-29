@@ -43,7 +43,7 @@ INSTALL_DIR = "server"
 DATA_DIR = "data"
 
 
-def serverversion() -> str:
+def _jdtls_version() -> str:
     version = sublime.load_settings(SETTINGS_FILENAME).get("version")
     return version or JDTLS_VERSION
 
@@ -116,8 +116,9 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
 
     @classmethod
     def jdtls_path(cls) -> str:
-        version = serverversion()
-        return os.path.join(cls.install_path(), version)
+        return os.path.join(
+            cls.install_path(), "jdtls-{version}".format(version=_jdtls_version())
+        )
 
     @classmethod
     def lombok_jar_path(cls) -> str:
@@ -147,7 +148,7 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
 
     @classmethod
     def install_or_update(cls) -> None:
-        version = serverversion()
+        version = _jdtls_version()
         basedir = cls.storage_subpath()
         if os.path.isdir(basedir):
             shutil.rmtree(basedir)

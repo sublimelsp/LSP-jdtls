@@ -30,10 +30,10 @@ from LSP.plugin.core.views import text_document_identifier
 
 # Fix reloading for submodules
 for m in list(sys.modules.keys()):
-    if m.startswith(__package__ + '.') and m != __name__:
+    if m.startswith(__package__ + ".") and m != __name__:
         del sys.modules[m]
 
-from .modules import client_command_handler
+from .modules.test_extension_client_command_handler import execute_client_command  # noqa: E402
 
 # fmt: off
 LOMBOK_VERSION = "1.18.24"
@@ -356,8 +356,7 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         session = self.weaksession()
         if not session:
             return
-
-        client_command_handler.execute_client_command(session, request_id, params["command"], params["arguments"])
+        execute_client_command(session, request_id, params["command"], params["arguments"])
 
 
 class DebuggerJdtlsBridgeRequest(LspWindowCommand):

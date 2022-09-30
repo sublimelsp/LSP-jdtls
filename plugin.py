@@ -17,6 +17,7 @@ import tempfile
 import tarfile
 import zipfile
 import json
+import sys
 
 # TODO: Not part of the public API :(
 from LSP.plugin.core.edit import apply_workspace_edit
@@ -27,7 +28,12 @@ from LSP.plugin.core.registry import LspWindowCommand, LspTextCommand
 from LSP.plugin.core.views import location_to_encoded_filename
 from LSP.plugin.core.views import text_document_identifier
 
-from .modules.client_command_handler import ask_client_for_choice
+# Fix reloading for submodules
+for m in list(sys.modules.keys()):
+    if m.startswith(__package__ + '.') and m != __name__:
+        del sys.modules[m]
+
+from .modules import client_command_handler
 
 # fmt: off
 LOMBOK_VERSION = "1.18.24"
@@ -351,17 +357,7 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         if not session:
             return
 
-        command_name = params["command"]
-        arguments = params["arguments"]
-
-        client_command_handler = {
-            "_java.test.askClientForChoice": ask_client_for_choice
-        }
-
-        if command_name in client_command_handler:
-            client_command_handler[command_name](session, request_id, *arguments)
-        else:
-            print("{}: no command handler for client command {}".format(SESSION_NAME, command_name))
+        client_command_handler.execute_client_command(session, request_id, params["command"], params["arguments"])
 
 
 class DebuggerJdtlsBridgeRequest(LspWindowCommand):

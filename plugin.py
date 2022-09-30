@@ -34,23 +34,19 @@ for m in list(sys.modules.keys()):
         del sys.modules[m]
 
 from .modules.test_extension_client_command_handler import execute_client_command  # noqa: E402
-
-# fmt: off
-LOMBOK_VERSION = "1.18.24"
-LOMBOK_URL = "https://repo1.maven.org/maven2/org/projectlombok/lombok/{version}/lombok-{version}.jar"
-DEBUG_PLUGIN_VERSION = "0.40.0"
-DEBUG_PLUGIN_URL = "https://repo1.maven.org/maven2/com/microsoft/java/com.microsoft.java.debug.plugin/{version}/com.microsoft.java.debug.plugin-{version}.jar"
-JDTLS_VERSION = "1.14.0-202207211651"
-JDTLS_URL = "http://download.eclipse.org/jdtls/snapshots/jdt-language-server-{version}.tar.gz"
-VSCODE_JAVA_TEST_EXTENSION_VERSION = "0.37.1"
-VSCODE_JAVA_TEST_EXTENSION_URL = "https://github.com/microsoft/vscode-java-test/releases/download/{version}/vscjava.vscode-java-test-{version}.vsix"
-
-SETTINGS_FILENAME = "LSP-jdtls.sublime-settings"
-STORAGE_DIR = "LSP-jdtls"
-SESSION_NAME = "jdtls"
-INSTALL_DIR = "server"
-DATA_DIR = "data"
-# fmt: on
+from .modules.constants import DATA_DIR  # noqa: E402
+from .modules.constants import DEBUG_PLUGIN_URL  # noqa: E402
+from .modules.constants import DEBUG_PLUGIN_VERSION  # noqa: E402
+from .modules.constants import INSTALL_DIR  # noqa: E402
+from .modules.constants import JDTLS_URL  # noqa: E402
+from .modules.constants import JDTLS_VERSION  # noqa: E402
+from .modules.constants import LOMBOK_URL  # noqa: E402
+from .modules.constants import LOMBOK_VERSION  # noqa: E402
+from .modules.constants import SESSION_NAME  # noqa: E402
+from .modules.constants import SETTINGS_FILENAME  # noqa: E402
+from .modules.constants import STORAGE_DIR  # noqa: E402
+from .modules.constants import VSCODE_JAVA_TEST_EXTENSION_URL  # noqa: E402
+from .modules.constants import VSCODE_JAVA_TEST_EXTENSION_VERSION  # noqa: E402
 
 
 def _jdtls_version() -> str:

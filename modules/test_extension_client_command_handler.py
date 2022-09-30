@@ -8,8 +8,7 @@ import sublime
 from LSP.plugin import Response, Session
 from LSP.plugin.core.types import Any, Callable
 
-
-SESSION_NAME = "jdtls"
+from .constants import SESSION_NAME
 
 
 def execute_client_command(session: Session, request_id, command, arguments):

@@ -16,12 +16,7 @@
         "command": "lsp_jdtls_refresh_workspace",
     },
     {
-    "caption": "LSP-jdtls: Generate tests",
-    "command": "lsp_execute",
-    "args": {
-      "session_name": "jdtls",
-      "command_name": "vscode.java.test.generateTests",
-      "command_args": ["${file_uri}", 0]
-    },
-  }
+        "caption": "LSP-jdtls: Generate tests...",
+        "command": "lsp_jdtls_generate_tests",
+    }
 ]

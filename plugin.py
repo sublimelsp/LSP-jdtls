@@ -34,6 +34,9 @@ for m in list(sys.modules.keys()):
         del sys.modules[m]
 
 from .modules.test_extension_client_command_handler import execute_client_command  # noqa: E402
+
+from .modules.test_extension_server_commands import LspJdtlsGenerateTests  # noqa: E402, F401
+
 from .modules.constants import DATA_DIR  # noqa: E402
 from .modules.constants import DEBUG_PLUGIN_URL  # noqa: E402
 from .modules.constants import DEBUG_PLUGIN_VERSION  # noqa: E402

@@ -13,7 +13,7 @@ import sublime
 import sublime_plugin
 
 from LSP.plugin.core.promise import Promise
-from LSP.plugin.core.typing import List, Optional, Dict, Any, Callable
+from LSP.plugin.core.typing import List, Optional, Dict, Any, Callable, Tuple
 
 
 class SelectableItem:
@@ -23,8 +23,7 @@ class SelectableItem:
         value: Any,
         details: str = "",
         annotation: str = "",
-        selected: bool = False,
-        kind_id: int = sublime.KIND_ID_AMBIGUOUS,
+        kind: Tuple[int, str, str] = sublime.KIND_AMBIGUOUS,
         on_select_confirmed: Callable[[], None] = lambda: None,
     ):
         """
@@ -34,7 +33,6 @@ class SelectableItem:
         :param      value:      The value that is returned when the selection is done
         :param      details:    The details show below the item
         :param      annotation: The annotation shown to the right of the item
-        :param      selected:   If this item should be preselected (only relevant for multi select)
         :param      kind_id:    The kind identifier, controls the icon
         :param      on_select_confirmed: Called when the item was selected and the panel is confirmed
         """
@@ -42,24 +40,8 @@ class SelectableItem:
         self.value = value
         self.details = details
         self.annotation = annotation
-        self.selected = selected
-        self.kind_id = kind_id
+        self.kind = kind
         self.on_select_confirmed = on_select_confirmed
-        self._on_select = lambda: self._toggle()   # type: Callable[[], None]
-        """
-        Called after the user selected the item.
-        The panel might be still open and the user might select this this item again (to unselect it).
-        The default implementation changes the selection state only.
-        """
-
-    def get_kind(self):
-        if self.selected:
-            return (self.kind_id, "●", "")
-        else:
-            return (self.kind_id, "○", "")
-
-    def _toggle(self):
-        self.selected = not self.selected
 
 
 class QuickSelect:
@@ -92,9 +74,6 @@ class QuickSelect:
     def show(self) -> Promise[Optional[List[SelectableItem]]]:
         return _ListInputHandler(self).show()
 
-    def _get_current_selection(self) -> List[SelectableItem]:
-        return list(filter(lambda item: item.selected, self.items))
-
 
 class _ListInputHandler(sublime_plugin.ListInputHandler):
     """
@@ -120,7 +99,7 @@ class _ListInputHandler(sublime_plugin.ListInputHandler):
     def __init__(self, context: QuickSelect):
         self.context = context
         self.finished = False
-        self.current_items = []  # type: List[SelectableItem]
+        self.selected_indices_stack = []  # type: List[int]
 
     def show(self) -> Promise[Optional[List[SelectableItem]]]:
         """
@@ -144,54 +123,61 @@ class _ListInputHandler(sublime_plugin.ListInputHandler):
         return []
 
     def list_items(self):
-        def on_confirm():
-            self.finished = True
+        # Value is set to an positive index to self.context.items
+        # Value is -1 to signal "confirm"
+        list_input_items = []
 
         if self.context.multi_select:
-            confirm_item = SelectableItem("Confirm", None, annotation="Accept this selection")
-            confirm_item._on_select = on_confirm
-
-            self.current_items = [confirm_item] + self.context.items
-            list_input_items = [sublime.ListInputItem(
-                confirm_item.label, 0, confirm_item.details, confirm_item.annotation, (sublime.KIND_ID_AMBIGUOUS, "", "")
-            )]
-        else:
-            self.current_items = self.context.items
-            list_input_items = []
-
-        for item in self.context.items:
-            list_input_item = sublime.ListInputItem(
-                item.label, len(list_input_items), item.details, item.annotation, item.get_kind()
+            list_input_items.append(
+                sublime.ListInputItem(
+                    "Confirm", -1, "", "Accept this selection", sublime.KIND_AMBIGUOUS
+                )
             )
-            list_input_items.append(list_input_item)
-        return (list_input_items, self.context.preselect_index)
+        for i, item in enumerate(self.context.items):
+            if i not in self.selected_indices_stack:
+                list_input_items.append(
+                    sublime.ListInputItem(
+                        item.label,
+                        i,
+                        item.details,
+                        item.annotation,
+                        item.kind,
+                    )
+                )
+        preselect_index = 0 if len(self.selected_indices_stack) else self.context.preselect_index
+        if self.context.multi_select:
+            # Shift because of "Confirm" item
+            preselect_index += 1
+        return (list_input_items, preselect_index)
 
     def cancel(self) -> None:
-        # self.context.promise._do_resolve(None)
-        # sublime.set_timeout(lambda: _hide_overlay(self.context.window))
-        pass
+        if self.selected_indices_stack:
+            self.selected_indices_stack.pop()
+        else:
+            self.context.promise._do_resolve(None)
+            sublime.set_timeout(lambda: _hide_overlay(self.context.window))
 
     def confirm(self, v: int) -> None:
-        self.current_items[v]._on_select()
-        self.context.preselect_index = v
+        if v == -1:
+            self.finished = True
+        else:
+            self.selected_indices_stack.append(v)
 
         if not self.context.multi_select:
             self.finished = True
 
         if self.finished:
-            selection = self.context._get_current_selection()
-            for item in selection:
+            selection = []
+            for index in self.selected_indices_stack:
+                item = self.context.items[index]
                 item.on_select_confirmed()
+                selection.append(item)
             self.context.promise._do_resolve(selection)
-        else:
-            sublime.set_timeout(lambda: self.show())
 
     def next_input(
         self, args: Dict[str, Any]
     ) -> Optional[sublime_plugin.CommandInputHandler]:
-        # Always return None and show a new panel on our own in confirm()
-        # since we need "unselect" too.
-        return None
+        return None if self.finished else self
 
 
 class JdtlsInputCommand(sublime_plugin.WindowCommand):

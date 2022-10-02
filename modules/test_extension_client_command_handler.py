@@ -43,10 +43,13 @@ def _ask_client_for_choice(session: Session, response_callback: Callable[[Any], 
             else:
                 response_callback(selection[0].value or selection[0].label)
 
-    # items = [sublime.QuickPanelItem(x["label"], x["description"] if "description" in x else "") for x in items]
-    items = [SelectableItem(x["label"], x.get("value", None), x.get("detail", ""), x.get("description", ""), x.get("picked", False)) for x in items]
-    QuickSelect(None, items, placeholder=placeholder, multi_select=multi_select).show().then(on_selection_done)
-    # sublime.active_window().show_quick_panel(panel_items, on_select, sublime.KEEP_OPEN_ON_FOCUS_LOST, placeholder=placeholder)
+    preselect_index = 0
+    for i, item in enumerate(items):
+        if item.get("picked", False):
+            preselect_index = i
+
+    qs_items = [SelectableItem(x["label"], x.get("value", None), x.get("detail", ""), x.get("description", "")) for x in items]
+    QuickSelect(None, qs_items, preselect_index=preselect_index, placeholder=placeholder, multi_select=multi_select).show().then(on_selection_done)
 
 
 def _ask_client_for_input(session: Session, response_callback: Callable[[Any], None], caption: str, initial_text: str):

@@ -46,10 +46,7 @@ class SelectableItem:
 
 class QuickSelect:
     """
-    This class can be used to perform a quick select flow.
-
-    By using an ListInputHandler instead of window.show_quick_panel advanced features like
-    multi select are possible.
+    This class can be used to query a selection from the user.
     """
 
     def __init__(
@@ -263,7 +260,7 @@ class JdtlsInputCommand(sublime_plugin.WindowCommand):
         return pending_list_input_handler
 
     def run(self, **args):
-        # This is a dummpy command that is just used to get the ListInputHandler shown.
+        # This is a dummy command that is just used to get the CommandInputHandler shown.
         ...
 
     def is_visible(self):

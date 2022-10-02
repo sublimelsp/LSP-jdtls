@@ -6,9 +6,10 @@
 import sublime
 
 from LSP.plugin import Response, Session
-from LSP.plugin.core.types import Any, Callable
+from LSP.plugin.core.types import Any, Callable, Optional, List
 
 from .constants import SESSION_NAME
+from .quick_select_panel import QuickSelect, SelectableItem
 
 
 def execute_client_command(session: Session, request_id, command, arguments):
@@ -33,18 +34,19 @@ def execute_client_command(session: Session, request_id, command, arguments):
 
 
 def _ask_client_for_choice(session: Session, response_callback: Callable[[Any], None], placeholder: str, items, multi_select: bool):
-    def on_select(index):
-        if index == -1:
+    def on_selection_done(selection: Optional[List[SelectableItem]]):
+        if not selection:
             response_callback(None)
         else:
-            response_params = items[index]["value"] if "value" in items[index] else items[index]["label"]
-            # Multiselect is currently unsupported by sublime, fallback to single select.
             if multi_select:
-                response_params = [response_params]
-            response_callback(response_params)
+                response_callback([x.value or x.label for x in selection])
+            else:
+                response_callback(selection[0].value or selection[0].label)
 
-    panel_items = [sublime.QuickPanelItem(x["label"], x["description"] if "description" in x else "") for x in items]
-    sublime.active_window().show_quick_panel(panel_items, on_select, sublime.KEEP_OPEN_ON_FOCUS_LOST, placeholder=placeholder)
+    # items = [sublime.QuickPanelItem(x["label"], x["description"] if "description" in x else "") for x in items]
+    items = [SelectableItem(x["label"], x.get("value", None), x.get("detail", ""), x.get("description", ""), x.get("picked", False)) for x in items]
+    QuickSelect(None, items, placeholder=placeholder, multi_select=multi_select).show().then(on_selection_done)
+    # sublime.active_window().show_quick_panel(panel_items, on_select, sublime.KEEP_OPEN_ON_FOCUS_LOST, placeholder=placeholder)
 
 
 def _ask_client_for_input(session: Session, response_callback: Callable[[Any], None], caption: str, initial_text: str):

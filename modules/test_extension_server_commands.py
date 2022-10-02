@@ -26,7 +26,14 @@ class LspJdtlsGenerateTests(LspTextCommand):
             "arguments": [uri_from_view(self.view), region.b]
         }  # type: ExecuteCommandParams
 
-        def _on_success(workspace_edit: WorkspaceEdit):
+        def _on_done(workspace_edit: WorkspaceEdit):
+            if workspace_edit is None:
+                return
+
+            if isinstance(workspace_edit, Exception):
+                print(workspace_edit)
+                return
+
             parsed_worspace_edit = parse_workspace_edit(workspace_edit)
 
             def open_changed_file(result):
@@ -38,4 +45,4 @@ class LspJdtlsGenerateTests(LspTextCommand):
 
             session.apply_parsed_workspace_edits(parsed_worspace_edit).then(open_changed_file)
 
-        session.execute_command(command, False).then(_on_success)
+        session.execute_command(command, False).then(_on_done)

@@ -18,5 +18,9 @@
     {
         "caption": "LSP-jdtls: Generate tests...",
         "command": "lsp_jdtls_generate_tests",
+    },
+    {
+        "caption": "LSP-jdtls",
+        "command": "jdtls_input",
     }
 ]

@@ -36,7 +36,7 @@ for m in list(sys.modules.keys()):
 from .modules.test_extension_client_command_handler import execute_client_command  # noqa: E402
 
 from .modules.test_extension_server_commands import LspJdtlsGenerateTests  # noqa: E402, F401
-from .modules.quick_select_panel import JdtlsInputCommand  # noqa: E402, F40
+from .modules.quick_input_panel import JdtlsInputCommand  # noqa: E402, F40
 
 from .modules.constants import DATA_DIR  # noqa: E402
 from .modules.constants import DEBUG_PLUGIN_URL  # noqa: E402

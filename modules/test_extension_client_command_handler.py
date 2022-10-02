@@ -9,7 +9,7 @@ from LSP.plugin import Response, Session
 from LSP.plugin.core.types import Any, Callable, Optional, List
 
 from .constants import SESSION_NAME
-from .quick_select_panel import QuickSelect, SelectableItem
+from .quick_input_panel import QuickSelect, SelectableItem, QuickTextInput
 
 
 def execute_client_command(session: Session, request_id, command, arguments):
@@ -53,10 +53,7 @@ def _ask_client_for_choice(session: Session, response_callback: Callable[[Any], 
 
 
 def _ask_client_for_input(session: Session, response_callback: Callable[[Any], None], caption: str, initial_text: str):
-    def on_done(answer: str):
+    def on_done(answer: Optional[str]):
         response_callback(answer)
 
-    def on_cancel():
-        response_callback(None)
-
-    sublime.active_window().show_input_panel(caption, initial_text, on_done, None, on_cancel)
+    QuickTextInput(None, caption, initial_text).show().then(on_done)

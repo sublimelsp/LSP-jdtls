@@ -3,8 +3,6 @@
 
 # execute_client_command is called in m_workspace_executeClientCommand in plugin.py
 
-import sublime
-
 from LSP.plugin import Response, Session
 from LSP.plugin.core.types import Any, Callable, Optional, List
 

@@ -20,6 +20,20 @@
         "command": "lsp_jdtls_generate_tests",
     },
     {
+        "caption": "LSP-jdtls: Goto Test",
+        "command": "lsp_jdtls_goto_test",
+        "args": {
+            "goto_test_or_implementation": true
+        }
+    },
+    {
+        "caption": "LSP-jdtls: Goto Implementation",
+        "command": "lsp_jdtls_goto_test",
+        "args": {
+            "goto_test_or_implementation": false
+        }
+    },
+    {
         "caption": "LSP-jdtls",
         "command": "jdtls_input",
     }

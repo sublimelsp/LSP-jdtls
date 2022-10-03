@@ -3,7 +3,6 @@ from LSP.plugin import register_plugin
 from LSP.plugin import Session
 from LSP.plugin import unregister_plugin
 from LSP.plugin import Request
-from LSP.plugin import Notification
 from LSP.plugin import WorkspaceFolder
 from LSP.plugin.core.types import ClientConfig
 from LSP.plugin.core.typing import Optional, Any, List, Dict, Mapping, Callable, Union
@@ -23,8 +22,6 @@ import sys
 from LSP.plugin.core.edit import apply_workspace_edit
 from LSP.plugin.core.edit import parse_workspace_edit
 from LSP.plugin.core.protocol import DocumentUri
-from LSP.plugin.core.protocol import ExecuteCommandParams
-from LSP.plugin.core.registry import LspWindowCommand, LspTextCommand
 from LSP.plugin.core.views import location_to_encoded_filename
 from LSP.plugin.core.views import text_document_identifier
 
@@ -34,9 +31,12 @@ for m in list(sys.modules.keys()):
         del sys.modules[m]
 
 from .modules.test_extension_client_command_handler import execute_client_command  # noqa: E402
-
 from .modules.test_extension_server_commands import LspJdtlsGenerateTests  # noqa: E402, F401
-from .modules.quick_input_panel import JdtlsInputCommand  # noqa: E402, F40
+from .modules.test_extension_server_commands import LspJdtlsGotoTest  # noqa: E402, F401
+from .modules.debug_extension import LspJdtlsRefreshWorkspace  # noqa: E402, F401
+from .modules.debug_extension import DebuggerJdtlsBridgeRequest  # noqa: E402, F401
+from .modules.quick_input_panel import JdtlsInputCommand  # noqa: E402, F401
+from .modules.utils import LspJdtlsTextCommand  # noqa: E402
 
 from .modules.constants import DATA_DIR  # noqa: E402
 from .modules.constants import DEBUG_PLUGIN_URL  # noqa: E402
@@ -359,47 +359,9 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         execute_client_command(session, request_id, params["command"], params["arguments"])
 
 
-class DebuggerJdtlsBridgeRequest(LspWindowCommand):
-    """Connector bridge to Debugger allowing to send requests to the language server.
+class LspJdtlsBuildWorkspace(LspJdtlsTextCommand):
 
-    The response is sent back using the specified callback_command (window command).
-    The callback command must have the interface def callback(id, error, resp),
-    if error is not None then it contains a reason else resp is not None.
-    """
-
-    session_name = SESSION_NAME
-
-    def run(self, id, callback_command, method, params, progress=False):
-        session = self.session()
-        response_args = {"id": id, "error": None, "resp": None}
-        if not session:
-            response_args["error"] = "No JDTLS session found."
-            self.window.run_command(callback_command, response_args)
-            return
-
-        def _on_request_success(resp):
-            response_args["resp"] = resp
-            self.window.run_command(callback_command, response_args)
-
-        def _on_request_error(err):
-            response_args["error"] = str(err)
-            self.window.run_command(callback_command, response_args)
-
-        session.send_request_async(
-            Request(method, params, progress=progress),
-            _on_request_success,
-            _on_request_error,
-        )
-
-
-class LspJdtlsBuildWorkspace(LspTextCommand):
-
-    session_name = SESSION_NAME
-
-    def run(self, edit):
-        session = self.session_by_name(SESSION_NAME)
-        if not session:
-            return
+    def run_jdtls_command(self, edit, session: Session):
         params = True
         session.send_request(
             Request("java/buildWorkspace", params),
@@ -422,30 +384,6 @@ class LspJdtlsBuildWorkspace(LspTextCommand):
 
     def on_error_async(self, error):
         pass
-
-
-class LspJdtlsRefreshWorkspace(LspTextCommand):
-
-    session_name = SESSION_NAME
-
-    def run(self, edit):
-        session = self.session_by_name(SESSION_NAME)
-        if not session:
-            return
-        command = {
-            "command": "vscode.java.resolveBuildFiles"
-        }  # type: ExecuteCommandParams
-        session.execute_command(command, False).then(self._send_update_requests)
-
-    def _send_update_requests(self, files):
-        session = self.session_by_name(SESSION_NAME)
-        if not session:
-            return
-        for uri in files:
-            params = {"uri": uri}
-            session.send_notification(
-                Notification("java/projectConfigurationUpdate", params)
-            )
 
 
 def plugin_loaded() -> None:

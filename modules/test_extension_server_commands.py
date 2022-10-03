@@ -1,21 +1,15 @@
-
-from LSP.plugin import LspTextCommand
+from LSP.plugin import Session
 from LSP.plugin.core.edit import WorkspaceEdit, parse_workspace_edit
 from LSP.plugin.core.open import open_file
 from LSP.plugin.core.protocol import ExecuteCommandParams
 from LSP.plugin.core.views import uri_from_view, first_selection_region
 
-from .constants import SESSION_NAME
+from .utils import LspJdtlsTextCommand
 
 
-class LspJdtlsGenerateTests(LspTextCommand):
+class LspJdtlsGenerateTests(LspJdtlsTextCommand):
 
-    session_name = SESSION_NAME
-
-    def run(self, edit):
-        session = self.session_by_name(SESSION_NAME)
-        if not session:
-            return
+    def run_jdtls_command(self, edit, session: Session):
         region = first_selection_region(self.view)
         if region is None:
             return
@@ -46,3 +40,18 @@ class LspJdtlsGenerateTests(LspTextCommand):
             session.apply_parsed_workspace_edits(parsed_worspace_edit).then(open_changed_file)
 
         session.execute_command(command, False).then(_on_done)
+
+
+class LspJdtlsGotoTest(LspJdtlsTextCommand):
+    """
+    Command to switch to tests and implementation.
+    """
+
+    def run_jdtls_command(self, edit, session: Session, goto_test_or_implementation: bool):
+        command = {
+            "command": "vscode.java.test.navigateToTestOrTarget",
+            # file_uri, (True: Goto test, False: Goto implementation)
+            "arguments": [uri_from_view(self.view), goto_test_or_implementation]
+        }  # type: ExecuteCommandParams
+        session.execute_command(command, False).then(print)
+

@@ -6,6 +6,7 @@ from .constants import SESSION_NAME
 
 
 def open_and_focus_uri(window: sublime.Window, uri: str):
+    # Replace that with session.open_uri_async once that does also focus an open view.
     _, file_name = parse_uri(uri)
     window.open_file(file_name)
 

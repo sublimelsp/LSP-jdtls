@@ -1,6 +1,13 @@
-from LSP.plugin import LspTextCommand, Session
+import sublime
+
+from LSP.plugin import LspTextCommand, Session, parse_uri
 
 from .constants import SESSION_NAME
+
+
+def open_and_focus_uri(window: sublime.Window, uri: str):
+    _, file_name = parse_uri(uri)
+    window.open_file(file_name)
 
 
 class LspJdtlsTextCommand(LspTextCommand):

@@ -121,7 +121,6 @@ class _TextInputHandler(sublime_plugin.TextInputHandler):
         self.context._promise._do_resolve(None)
 
     def validate(self, text: str) -> bool:
-        print(text)
         return self.context._validate(text) if self.context._validate else True
 
     def preview(self, text: str) -> Union[str, sublime.Html]:

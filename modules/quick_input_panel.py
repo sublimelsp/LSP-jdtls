@@ -181,6 +181,7 @@ class _ListInputHandler(sublime_plugin.ListInputHandler):
             self.selected_indices_stack.pop()
         else:
             self.context._promise._do_resolve(None)
+            # calling _hide_overlay directly crashes sublime :(
             sublime.set_timeout(lambda: _hide_overlay(self.context._window))
 
     def confirm(self, v: int) -> None:

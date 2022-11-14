@@ -27,6 +27,18 @@
         }
     },
     {
+        "caption": "LSP-jdtls: Run Test Class",
+        "command": "lsp_jdtls_run_test_class",
+    },
+    {
+        "caption": "LSP-jdtls: Run Test At Cursor",
+        "command": "lsp_jdtls_run_test_at_cursor",
+    },
+    {
+        "caption": "LSP-jdtls: Run Test...",
+        "command": "lsp_jdtls_run_test",
+    },
+    {
         "caption": "LSP-jdtls: Goto Implementation",
         "command": "lsp_jdtls_goto_test",
         "args": {

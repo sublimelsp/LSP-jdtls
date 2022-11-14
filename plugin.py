@@ -32,7 +32,7 @@ for m in list(sys.modules.keys()):
 
 from .modules.test_extension_client_command_handler import execute_client_command  # noqa: E402
 from .modules.test_extension_server_commands import LspJdtlsGenerateTests  # noqa: E402, F401
-from .modules.test_extension_server_commands import LspJdtlsGotoTest  # noqa: E402, F401
+from .modules.test_extension_server_commands import LspJdtlsGotoTest, LspJdtlsRunTestAtCursor, LspJdtlsRunTestClass, LspJdtlsRunTest  # noqa: E402, F401
 from .modules.debug_extension import LspJdtlsRefreshWorkspace  # noqa: E402, F401
 from .modules.debug_extension import DebuggerJdtlsBridgeRequest  # noqa: E402, F401
 from .modules.quick_input_panel import JdtlsInputCommand  # noqa: E402, F401

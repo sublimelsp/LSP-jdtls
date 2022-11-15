@@ -5,16 +5,11 @@ from LSP.plugin import unregister_plugin
 from LSP.plugin import Request
 from LSP.plugin import WorkspaceFolder
 from LSP.plugin.core.types import ClientConfig
-from LSP.plugin.core.typing import Optional, Any, List, Dict, Mapping, Callable, Union
+from LSP.plugin.core.typing import Optional, Any, List, Dict, Mapping, Callable
 
 import os
 import sublime
-from urllib.request import urlopen
 import re
-import shutil
-import tempfile
-import tarfile
-import zipfile
 import json
 import sys
 
@@ -31,81 +26,16 @@ for m in list(sys.modules.keys()):
         del sys.modules[m]
 
 from .modules.test_extension_client_command_handler import execute_client_command  # noqa: E402
-from .modules.test_extension_server_commands import LspJdtlsGenerateTests  # noqa: E402, F401
-from .modules.test_extension_server_commands import LspJdtlsGotoTest, LspJdtlsRunTestAtCursor, LspJdtlsRunTestClass, LspJdtlsRunTest  # noqa: E402, F401
-from .modules.debug_extension import LspJdtlsRefreshWorkspace  # noqa: E402, F401
-from .modules.debug_extension import DebuggerJdtlsBridgeRequest  # noqa: E402, F401
+from .modules.test_extension_server_commands import LspJdtlsGenerateTests, LspJdtlsGotoTest, LspJdtlsRunTestAtCursor, LspJdtlsRunTestClass, LspJdtlsRunTest  # noqa: E402, F401
+from .modules.debug_extension import LspJdtlsRefreshWorkspace, DebuggerJdtlsBridgeRequest  # noqa: E402, F401
 from .modules.quick_input_panel import JdtlsInputCommand  # noqa: E402, F401
 from .modules.utils import LspJdtlsTextCommand  # noqa: E402
 
 from .modules.constants import DATA_DIR  # noqa: E402
-from .modules.constants import DEBUG_PLUGIN_URL  # noqa: E402
-from .modules.constants import DEBUG_PLUGIN_VERSION  # noqa: E402
-from .modules.constants import INSTALL_DIR  # noqa: E402
-from .modules.constants import JDTLS_URL  # noqa: E402
-from .modules.constants import JDTLS_VERSION  # noqa: E402
-from .modules.constants import LOMBOK_URL  # noqa: E402
-from .modules.constants import LOMBOK_VERSION  # noqa: E402
 from .modules.constants import SESSION_NAME  # noqa: E402
 from .modules.constants import SETTINGS_FILENAME  # noqa: E402
-from .modules.constants import STORAGE_DIR  # noqa: E402
-from .modules.constants import VSCODE_JAVA_TEST_EXTENSION_URL  # noqa: E402
-from .modules.constants import VSCODE_JAVA_TEST_EXTENSION_VERSION  # noqa: E402
 
-
-def _jdtls_version() -> str:
-    version = sublime.load_settings(SETTINGS_FILENAME).get("version")
-    return version or JDTLS_VERSION
-
-
-def _jdtls_platform() -> str:
-    p = sublime.platform()
-    if p == "windows":
-        return "win"
-    elif p == "osx":
-        return "mac"
-    elif p == "linux":
-        return "linux"
-    else:
-        raise ValueError("unknown platform: {}".format(p))
-
-
-def download_file(url: str, file_name: str) -> None:
-    with urlopen(url) as response, open(file_name, "wb") as out_file:
-        shutil.copyfileobj(response, out_file)
-
-
-def _extract_file(
-    url: str,
-    path: str,
-    open_function: Union[
-        Callable[[str], zipfile.ZipFile], Callable[[str], tarfile.TarFile]
-    ],
-):
-    with tempfile.TemporaryDirectory() as download_dir:
-        compressed_file = os.path.join(download_dir, "compressed_file")
-        download_file(url, compressed_file)
-        uncompress_dir = os.path.join(download_dir, "uncompress_dir")
-        os.makedirs(uncompress_dir)
-        with open_function(compressed_file) as compressed_file:
-            compressed_file.extractall(uncompress_dir)
-        shutil.move(uncompress_dir, path)
-
-
-def extract_zip(url: str, path: str):
-    """
-    Extracts the zip at `url` to `path`.
-    The zip is extracted into `path` if it already exists.
-    """
-    _extract_file(url, path, lambda x: zipfile.ZipFile(x, "r"))
-
-
-def extract_tar(url: str, path: str):
-    """
-    Extracts the tar at `url` to `path`.
-    The tar is extracted into `path` if it already exists.
-    """
-    _extract_file(url, path, lambda x: tarfile.open(x, "r:gz"))
+from .modules import installer  # noqa: E402
 
 
 class EclipseJavaDevelopmentTools(AbstractPlugin):
@@ -113,77 +43,16 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
     def name(cls) -> str:
         return SESSION_NAME
 
-    # Path definitions
-    ##################
-
-    @classmethod
-    def storage_subpath(cls) -> str:
-        return os.path.join(cls.storage_path(), STORAGE_DIR)
-
-    @classmethod
-    def install_path(cls) -> str:
-        return os.path.join(cls.storage_subpath(), INSTALL_DIR)
-
-    @classmethod
-    def jdtls_path(cls) -> str:
-        return os.path.join(
-            cls.install_path(), "jdtls-{version}".format(version=_jdtls_version())
-        )
-
-    @classmethod
-    def vscode_java_test_extension_path(cls) -> str:
-        return os.path.join(
-            cls.install_path(),
-            "vscode-java-test-{version}".format(
-                version=VSCODE_JAVA_TEST_EXTENSION_VERSION
-            ),
-        )
-
-    @classmethod
-    def lombok_jar_path(cls) -> str:
-        return os.path.join(
-            cls.install_path(),
-            "lombok-{version}.jar".format(version=DEBUG_PLUGIN_VERSION),
-        )
-
-    @classmethod
-    def debug_plugin_jar_path(cls) -> str:
-        return os.path.join(
-            cls.install_path(),
-            "com.microsoft.java.debug.plugin-{version}.jar".format(
-                version=DEBUG_PLUGIN_VERSION
-            ),
-        )
-
     # Installation and Updates
     ##########################
 
     @classmethod
     def needs_update_or_installation(cls) -> bool:
-        result = not os.path.isdir(cls.jdtls_path())
-        result |= not os.path.isfile(cls.lombok_jar_path())
-        result |= not os.path.isfile(cls.debug_plugin_jar_path())
-        result |= not os.path.isdir(cls.vscode_java_test_extension_path())
-        return result
+        return installer.needs_update_or_installation()
 
     @classmethod
     def install_or_update(cls) -> None:
-        version = _jdtls_version()
-        basedir = cls.storage_subpath()
-        if os.path.isdir(basedir):
-            shutil.rmtree(basedir)
-        os.makedirs(basedir)
-
-        # fmt: off
-        sublime.status_message("LSP-jdtls: downloading jdtls...")
-        extract_tar(JDTLS_URL.format(version=version), cls.jdtls_path())
-        sublime.status_message("LSP-jdtls: downloading lombok...")
-        download_file(LOMBOK_URL.format(version=LOMBOK_VERSION), cls.lombok_jar_path())
-        sublime.status_message("LSP-jdtls: downloading debug plugin...")
-        download_file(DEBUG_PLUGIN_URL.format(version=DEBUG_PLUGIN_VERSION), cls.debug_plugin_jar_path())
-        sublime.status_message("LSP-jdtls: downloading test extension...")
-        extract_zip(VSCODE_JAVA_TEST_EXTENSION_URL.format(version=VSCODE_JAVA_TEST_EXTENSION_VERSION), cls.vscode_java_test_extension_path())
-        # fmt: on
+        installer.install_or_update()
 
     # Server configuration
     ######################
@@ -200,20 +69,32 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
             java_executable = "java"
 
         launcher_version = ""
-        for file in os.listdir(os.path.join(cls.jdtls_path(), "plugins")):
+        for file in os.listdir(os.path.join(installer.jdtls_path(), "plugins")):
             match = re.search("org.eclipse.equinox.launcher_(.*).jar", file)
             if match:
                 launcher_version = match.group(1)
+
+        def _jdtls_platform() -> str:
+            p = sublime.platform()
+            if p == "windows":
+                return "win"
+            elif p == "osx":
+                return "mac"
+            elif p == "linux":
+                return "linux"
+            else:
+                raise ValueError("unknown platform: {}".format(p))
+
         return {
             "java_executable": java_executable,
             "watch_parent_process": "false"
             if sublime.platform() == "windows"
             else "true",
             "jdtls_platform": _jdtls_platform(),
-            "serverdir": cls.jdtls_path(),
-            "datadir": os.path.join(cls.storage_subpath(), DATA_DIR),
+            "serverdir": installer.jdtls_path(),
+            "datadir": os.path.join(installer.storage_subpath(), DATA_DIR),
             "launcher_version": launcher_version,
-            "debug_plugin_path": cls.debug_plugin_jar_path(),
+            "debug_plugin_path": installer.debug_plugin_jar_path(),
         }
 
     @classmethod
@@ -221,7 +102,7 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         """
         Edits the command to enable/disable lombok.
         """
-        javaagent_arg = "-javaagent:" + cls.lombok_jar_path()
+        javaagent_arg = "-javaagent:" + installer.lombok_jar_path()
 
         # Prevent adding the argument multiple times
         if (
@@ -238,8 +119,8 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
 
     @classmethod
     def _enable_test_extension(cls, configuration: ClientConfig):
-        jarpath = os.path.join(cls.vscode_java_test_extension_path(), "extension/server")
-        with open(os.path.join(cls.vscode_java_test_extension_path(), "extension/package.json"), "r") as package_json:
+        jarpath = os.path.join(installer.vscode_java_test_extension_path(), "extension/server")
+        with open(os.path.join(installer.vscode_java_test_extension_path(), "extension/package.json"), "r") as package_json:
             jars = json.load(package_json)["contributes"]["javaExtensions"]
             bundles = configuration.init_options.get("bundles")
             for jar in jars:

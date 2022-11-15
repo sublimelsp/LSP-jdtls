@@ -53,3 +53,13 @@ IJavaTestItem = TypedDict('IJavaTestItem', {
     "natureIds": NotRequired[List[str]],
     # Optional fields for projects
 })
+
+IJUnitLaunchArguments = TypedDict('IJUnitLaunchArguments', {
+    "workingDirectory": str,
+    "mainClass": str,
+    "projectName": str,
+    "classpath": List[str],
+    "modulepath": List[str],
+    "vmArguments": List[str],
+    "programArguments": List[str],
+})

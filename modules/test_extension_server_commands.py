@@ -1,4 +1,7 @@
 import sublime
+import json
+import os
+import re
 
 from LSP.plugin import Session, parse_uri
 from LSP.plugin.core.edit import WorkspaceEdit, parse_workspace_edit
@@ -6,9 +9,12 @@ from LSP.plugin.core.protocol import ExecuteCommandParams
 from LSP.plugin.core.views import KIND_CLASS, KIND_METHOD, offset_to_point, uri_from_view, first_selection_region
 from LSP.plugin.core.typing import List, Tuple, Callable
 
+from .constants import SESSION_NAME
 from .quick_input_panel import QuickSelect, SelectableItem
-from .text_extension_protocol import ITestNavigationResult, IJavaTestItem, TestLevel
+from .text_extension_protocol import IJUnitLaunchArguments, ITestNavigationResult, IJavaTestItem, TestKind, TestLevel
 from .utils import flatten_test_items, sublime_debugger_available, LspJdtlsTextCommand, open_and_focus_uri
+from .installer import vscode_java_test_extension_path
+from .test_extension_server import TestExtensionServer
 
 
 class LspJdtlsGenerateTests(LspJdtlsTextCommand):
@@ -104,10 +110,6 @@ class LspJdtlsGotoTest(LspJdtlsTextCommand):
         print(error)
 
 
-def run_test_item(test_item: IJavaTestItem):
-    print(test_item)
-
-
 class LspJdtlsTestCommand(LspJdtlsTextCommand):
     """
     Debug the test class in the current view.
@@ -128,25 +130,98 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
             raise ValueError("JDTLS test extension not found.")
         command = {
             "command": resolve_command,
-            # file_uri, (True: Goto test, False: Goto implementation)
             "arguments": [uri_from_view(self.view)],
         }  # type: ExecuteCommandParams
         session.execute_command(command, False).then(
-            lambda result: self._on_error(result)
+            lambda result: print("Error fetching tests: " + str(result))
             if isinstance(result, Exception)
-            else self._on_success(result)
+            else self.select_test_item(result, self.fetch_debug_args)
         )
-
-    def _on_success(
-        self, test_items: List[IJavaTestItem]
-    ):
-        self.select_test_item(test_items, run_test_item)
-
-    def _on_error(self, error):
-        print("Error fetching tests: " + error)
 
     def select_test_item(self, test_items: List[IJavaTestItem], then: Callable[[IJavaTestItem], None]) -> None:
         ...
+
+    def fetch_debug_args(self, test_item: IJavaTestItem):
+        session = self.session_by_name(SESSION_NAME)
+        if not session:
+            return
+        command = {
+            "command": 'vscode.java.test.junit.argument',
+            "arguments": [json.dumps({
+                "projectName": test_item["projectName"],
+                "testLevel": test_item["testLevel"],
+                "testKind": test_item["testKind"],
+                "testNames": [self.get_test_name(test_item)],
+            })],
+        }  # type: ExecuteCommandParams
+        session.execute_command(command, False).then(
+            lambda result: print("Error fetching debug arguments: " + str(result))
+            if isinstance(result, Exception)
+            else self.resolve_debug_classpath(test_item, result)
+        )
+
+    def get_test_name(self, test_item: IJavaTestItem) -> str:
+        if test_item["testKind"] == TestKind.TestNG:
+            return test_item["fullName"]
+        elif test_item["testLevel"] == TestLevel.Class:
+            return test_item["fullName"]
+        else:
+            return test_item["jdtHandler"]
+
+    def resolve_debug_classpath(self, test_item: IJavaTestItem, launch_args: IJUnitLaunchArguments):
+        session = self.session_by_name(SESSION_NAME)
+        if not session:
+            return
+        command = {
+            "command": 'java.project.getClasspaths',
+            "arguments": [uri_from_view(self.view), json.dumps({
+                "scope": "test"
+            })],
+        }  # type: ExecuteCommandParams
+
+        def merge_classpaths(classpath: List[str]):
+            launch_args["classpath"].extend(x for x in classpath if x not in launch_args["classpath"])
+            self.launch(test_item, launch_args)
+
+        session.execute_command(command, False).then(
+            lambda result: print("Error resolving classpath: " + str(result))
+            if isinstance(result, Exception)
+            else merge_classpaths(result["classpaths"])
+        )
+
+    def launch(self, test_item: IJavaTestItem, launch_args: IJUnitLaunchArguments):
+        """
+        See resolveLaunchConfigurationForRunner
+        """
+
+        debugger_config = {
+            "name": test_item["label"],
+            "type": 'java',
+            "request": 'launch',
+            "mainClass": launch_args["mainClass"],
+            "projectName": launch_args["projectName"],
+            "cwd": launch_args["workingDirectory"],
+            "classPaths": launch_args["classpath"],
+            "modulePaths": launch_args["modulepath"],
+            "args": " ".join(launch_args["programArguments"]),
+            "vmArgs": " ".join(launch_args["vmArguments"]),
+            "noDebug": False,
+        }
+
+        if test_item["testKind"] == TestKind.TestNG:
+            debugger_config["mainClass"] = "com.microsoft.java.test.runner.Launcher"
+            jarpath = os.path.join(vscode_java_test_extension_path(), "extension/server/com.microsoft.java.test.runner-jar-with-dependencies.jar")
+            debugger_config["classPaths"] += [jarpath]
+            # TODO: Add port for server (getApplicationArgs())
+
+        window = self.view.window()
+        if window:
+            window.run_command("debugger", {"action": "open_and_start", "configuration": debugger_config})
+
+        # TODO: Parse and print results, shutdown server correcly
+        port = int(next(re.finditer(r"-port (\d+)", debugger_config["args"])).group(1))
+        server = TestExtensionServer(port)
+        sublime.set_timeout_async(server.server.shutdown, 1000 * 60)
 
 
 class LspJdtlsRunTestClass(LspJdtlsTestCommand):
@@ -155,9 +230,9 @@ class LspJdtlsRunTestClass(LspJdtlsTestCommand):
     """
 
     def select_test_item(self, test_items: List[IJavaTestItem], then: Callable[[IJavaTestItem], None]) -> None:
-        for lens in test_items:
-            if lens["testLevel"] == TestLevel.Class:
-                then(lens)
+        for item in test_items:
+            if item["testLevel"] == TestLevel.Class:
+                then(item)
                 return
         sublime.error_message("No test at class level found")
         raise ValueError("No test at class level found")

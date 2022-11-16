@@ -120,16 +120,8 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
             sublime.error_message("Sublime Debugger must be installed and activated to use this command!")
             raise ValueError()
 
-        commands = session.capabilities.get("executeCommandProvider.commands")
-        if "vscode.java.test.search.codelens" in commands:
-            resolve_command = "vscode.java.test.search.codelens"
-        elif "vscode.java.test.findTestTypesAndMethods" in commands:
-            resolve_command = "vscode.java.test.findTestTypesAndMethods"
-        else:
-            sublime.error_message("JDTLS test extension not found.")
-            raise ValueError("JDTLS test extension not found.")
         command = {
-            "command": resolve_command,
+            "command": "vscode.java.test.findTestTypesAndMethods",
             "arguments": [uri_from_view(self.view)],
         }  # type: ExecuteCommandParams
         session.execute_command(command, False).then(

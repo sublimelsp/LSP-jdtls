@@ -186,6 +186,12 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
         See resolveLaunchConfigurationForRunner
         """
 
+        server = TestExtensionServer()
+
+        # The port in launch_args is a placeholder. (See vscode-java-test)
+        port_idx = launch_args["programArguments"].index("-port") + 1
+        launch_args["programArguments"][port_idx] = str(server.get_port())
+
         debugger_config = {
             "name": test_item["label"],
             "type": 'java',
@@ -204,15 +210,14 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
             debugger_config["mainClass"] = "com.microsoft.java.test.runner.Launcher"
             jarpath = os.path.join(vscode_java_test_extension_path(), "extension/server/com.microsoft.java.test.runner-jar-with-dependencies.jar")
             debugger_config["classPaths"] += [jarpath]
-            # TODO: Add port for server (getApplicationArgs())
+            # TODO: getApplicationArgs()
 
         window = self.view.window()
         if window:
             window.run_command("debugger", {"action": "open_and_start", "configuration": debugger_config})
 
         # TODO: Parse and print results, shutdown server correcly
-        port = int(next(re.finditer(r"-port (\d+)", debugger_config["args"])).group(1))
-        server = TestExtensionServer(port)
+        server.serve()
         sublime.set_timeout_async(server.server.shutdown, 1000 * 60)
 
 

@@ -25,7 +25,7 @@ for m in list(sys.modules.keys()):
     if m.startswith(__package__ + ".") and m != __name__:
         del sys.modules[m]
 
-from .modules.test_extension_client_command_handler import execute_client_command  # noqa: E402
+from .modules.client_command_handler import execute_client_command  # noqa: E402
 from .modules.test_extension_server_commands import LspJdtlsGenerateTests, LspJdtlsGotoTest, LspJdtlsRunTestAtCursor, LspJdtlsRunTestClass, LspJdtlsRunTest  # noqa: E402, F401
 from .modules.debug_extension import LspJdtlsRefreshWorkspace, DebuggerJdtlsBridgeRequest  # noqa: E402, F401
 from .modules.quick_input_panel import JdtlsInputCommand  # noqa: E402, F401

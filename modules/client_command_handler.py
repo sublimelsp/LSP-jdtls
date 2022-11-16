@@ -1,5 +1,7 @@
 # Handler for workspace/executeClientCommand requests.
+
 # See https://github.com/microsoft/vscode-java-test/tree/main/src/commands
+# See https://github.com/redhat-developer/vscode-java/blob/master/src/commands.ts
 
 # execute_client_command is called in m_workspace_executeClientCommand in plugin.py
 
@@ -11,9 +13,12 @@ from .quick_input_panel import QuickSelect, SelectableItem, QuickTextInput
 
 
 def execute_client_command(session: Session, request_id, command, arguments):
-    # There should be an entry for every JavaTestRunnerCommand
-    # found in https://github.com/microsoft/vscode-java-test/blob/main/src/constants.ts
     client_command_handler = {
+        # vscode-java EXTENSION
+        "_java.reloadBundles.command": _reload_bundles,
+        # vscode-java-test EXTENSION
+        # There should be an entry for every JavaTestRunnerCommand
+        # found in https://github.com/microsoft/vscode-java-test/blob/main/src/constants.ts
         "_java.test.askClientForChoice": _ask_client_for_choice,
         "_java.test.askClientForInput": _ask_client_for_input
     }
@@ -30,6 +35,14 @@ def execute_client_command(session: Session, request_id, command, arguments):
 # HANDLERS
 ###############################
 
+
+## vscode-java EXTENSION
+
+def _reload_bundles(session: Session, response_callback: Callable[[Any], None]):
+    pass
+
+
+## vscode-java-test EXTENSION
 
 def _ask_client_for_choice(session: Session, response_callback: Callable[[Any], None], placeholder: str, items, multi_select: bool):
     def on_selection_done(selection: Optional[List[SelectableItem]]):

@@ -14,7 +14,7 @@ from .quick_input_panel import QuickSelect, SelectableItem
 from .text_extension_protocol import IJUnitLaunchArguments, ITestNavigationResult, IJavaTestItem, TestKind, TestLevel
 from .utils import flatten_test_items, sublime_debugger_available, LspJdtlsTextCommand, open_and_focus_uri
 from .installer import vscode_java_test_extension_path
-from .test_extension_server import TestExtensionServer
+from .test_extension_server import JunitResultsServer
 
 
 class LspJdtlsGenerateTests(LspJdtlsTextCommand):
@@ -186,7 +186,8 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
         See resolveLaunchConfigurationForRunner
         """
 
-        server = TestExtensionServer()
+        server = JunitResultsServer()
+        server.receive_test_results_async()
 
         # The port in launch_args is a placeholder. (See vscode-java-test)
         port_idx = launch_args["programArguments"].index("-port") + 1
@@ -215,10 +216,6 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
         window = self.view.window()
         if window:
             window.run_command("debugger", {"action": "open_and_start", "configuration": debugger_config})
-
-        # TODO: Parse and print results, shutdown server correcly
-        server.serve()
-        sublime.set_timeout_async(server.server.shutdown, 1000 * 60)
 
 
 class LspJdtlsRunTestClass(LspJdtlsTestCommand):

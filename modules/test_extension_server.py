@@ -1,7 +1,7 @@
 import socketserver
 import threading
 import sublime
-from LSP.plugin.core.typing import Enum
+from LSP.plugin.core.typing import Enum, Optional, List, Dict
 
 
 class MessageIds(Enum):
@@ -112,22 +112,182 @@ class MessageIds(Enum):
     """Test identifier prefix for tests with assumption failures."""
 
 
+class TestState(Enum):
+    WAITING = "Test has not been run"
+    STARTED = "Test is running"
+    FAILED = "An assertion has failed"
+    ASSUMPTION_FAILED = "An assumption has failed"
+    ENDED = "Test run ended successfully"
+
+
+class Test:
+    def __init__(
+        self,
+        id: int,
+        name: str,
+        is_suite: bool,
+        count: int,
+        is_dynamic: bool,
+        parent: Optional["Test"],
+        display_name: str,
+        parameter_types: str,
+        unique_id: str,
+    ):
+        self.id = id
+        self.name = name
+        self.is_suite = is_suite
+        self.count = count
+        self.is_dynamic = is_dynamic
+        self.parent = parent
+        self.display_name = display_name
+        self.parameter_types = parameter_types
+        self.unique_id = unique_id
+
+        self.ignored = False
+
+        self._state = TestState.WAITING
+        self._children = []  # type: List["Test"]
+        self._failed = False
+        self._trace = None  # type: Optional[str]
+
+        if parent:
+            parent._children.append(self)
+
+    def _set_failed(self):
+        self._failed = True
+        if self.parent:
+            self.parent._set_failed()
+
+    def is_failed(self):
+        return self._failed
+
+    def get_children(self):
+        return self._children.copy()
+
+    def set_state(self, state: TestState):
+        self._state = state
+        if state == TestState.FAILED or TestState.ASSUMPTION_FAILED:
+            self._set_failed()
+
+    def get_state(self):
+        self._state
+
+    def set_trace(self, trace: str):
+        self._trace = trace
+
+    def get_trace(self) -> Optional[str]:
+        return self._trace
+
+    def to_markdown_item(self, indent: int) -> str:
+        """Creates a markdown item including the results of this test."""
+        return ""
+
+
+class TestContainer:
+    def __init__(self):
+        self._by_id = {}  # type: Dict[int, Test]
+        self._by_name = {}  # type: Dict[str, Test]
+        self._roots = []  # type: List[Test]
+
+    def get_by_name(self, name: str) -> Optional[Test]:
+        return self._by_name.get(name, None)
+
+    def get_by_id(self, id: int) -> Optional[Test]:
+        return self._by_id.get(id, None)
+
+    def insert(self, test: Test):
+        self._by_id[test.id] = test
+        self._by_name[test.name] = test
+
+        if not test.parent:
+            self._roots.append(test)
+
+    def insert_from_testtree(self, testtree_repr: List[str]) -> Test:
+        test = Test(
+            int(testtree_repr[0]),  # TODO: AssumptionFailed / Ignore
+            testtree_repr[1],
+            testtree_repr[2] == "true",
+            int(testtree_repr[3]),
+            testtree_repr[4] == "true",
+            None if testtree_repr[5] == testtree_repr[0] else self.get_by_id(int(testtree_repr[5])),  # Runner returns parent == id for roots
+            testtree_repr[6],
+            testtree_repr[7],
+            testtree_repr[8]
+        )
+        self.insert(test)
+        return test
+
+    def to_markdown_list(self) -> str:
+        return ""
+
+
 class _JunitResultsHandler(socketserver.StreamRequestHandler):
     def handle(self):
-        view = sublime.active_window().new_file()
+        panel = sublime.active_window().create_output_panel("JDTLS Test Log")
+
+        view = sublime.active_window().new_file(
+            0, sublime.find_resources("Markdown.sublime-syntax")[0]
+        )
+        view.set_name("JDTLS Test Results")
         view.set_scratch(True)
-        view.set_name("Test Results")
+        view.run_command(
+            "insert",
+            {
+                "characters": "Collecting results...\n\n_(See: `JDTLS Test Log` panel for a real time log)_"
+            },
+        )
+
+        container = TestContainer()
+        current_test = None  # type: Optional[Test]
+        runtime_ms = None  # type: Optional[int]
 
         while True:
-            line = self.rfile.readline().strip().decode()
+            line = self.rfile.readline().decode().strip()
             if not line:
                 break
-            view.run_command("insert", {"characters": line + "\n"})
+            panel.run_command("insert", {"characters": line + "\n"})
+            header, args = (
+                line[: MessageIds.MSG_HEADER_LENGTH],
+                line[MessageIds.MSG_HEADER_LENGTH :].split(","),
+            )
+
+            if header == MessageIds.TEST_TREE:
+                container.insert_from_testtree(args)
+            elif header == MessageIds.TEST_START:
+                current_test = container.get_by_id(int(args[0]))
+                if current_test:
+                    current_test.set_state(TestState.STARTED)
+            elif header == MessageIds.TEST_FAILED:
+                current_test = container.get_by_id(int(args[0]))
+                if current_test:
+                    if args[1].startswith(MessageIds.ASSUMPTION_FAILED_TEST_PREFIX.value):
+                        current_test.set_state(TestState.ASSUMPTION_FAILED)
+                    else:
+                        current_test.set_state(TestState.FAILED)
+            elif header == MessageIds.TEST_END:
+                if current_test:
+                    current_test.set_state(TestState.ENDED)
+                current_test = None
+            elif header == MessageIds.TRACE_START:
+                trace = ""
+                while True:
+                    trace_line = self.rfile.readline().decode()
+                    if not trace_line:
+                        break
+                    if trace_line.startswith(MessageIds.TRACE_END.value):
+                        break
+                if current_test:
+                    current_test.set_trace(trace)
+            elif header == MessageIds.TEST_RUN_END:
+                runtime_ms = int(args[0])
+
+        view.run_command("select_all")
+        view.run_command("right_delete")
+        view.run_command("insert", {"characters": "Results"})
 
 
 class JunitResultsServer:
-    """TCP Server that connects to https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/master/org.eclipse.jdt.junit.runtime/src/org/eclipse/jdt/internal/junit/runner/RemoteTestRunner.java
-    """
+    """TCP Server that connects to https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/master/org.eclipse.jdt.junit.runtime/src/org/eclipse/jdt/internal/junit/runner/RemoteTestRunner.java"""
 
     def __init__(self):
         self.server = socketserver.TCPServer(("localhost", 0), _JunitResultsHandler)
@@ -146,5 +306,6 @@ class JunitResultsServer:
         def _handle_single():
             self.server.handle_request()
             self.server.server_close()
+
         thread = threading.Thread(target=_handle_single, daemon=True)
         thread.start()

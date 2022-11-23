@@ -334,11 +334,6 @@ class _JunitResultsHandler(socketserver.StreamRequestHandler):
             elif header == MessageIds.TEST_FAILED:
                 current_test = container.get_by_id(int(args[0]))
                 if current_test:
-                    if args[1].startswith(
-                        MessageIds.ASSUMPTION_FAILED_TEST_PREFIX
-                    ):
-                        # TODO
-                        pass
                     current_test.set_failed()
             elif header == MessageIds.TEST_ERROR:
                 current_test = container.get_by_id(int(args[0]))

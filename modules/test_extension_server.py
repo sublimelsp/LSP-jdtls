@@ -155,6 +155,7 @@ class Test:
         self._trace = ""  # type: str
         self._actual = ""  # type: str
         self._expected = ""  # type: str
+        self._started = False  # type: bool
 
         if parent:
             parent._children.append(self)
@@ -170,8 +171,15 @@ class Test:
 
     def set_failed(self):
         self._failed = True
+        # The runner may not send TEST_START :(
+        self._started = True
         if self.parent:
             self.parent.set_failed()
+
+    def set_started(self):
+        self._started = True
+        if self.parent:
+            self.parent.set_started()
 
     def is_failed(self):
         return self._failed
@@ -199,12 +207,15 @@ class Test:
 
     def to_markdown(self, level: int) -> str:
         """Creates a markdown item including the results of this test."""
+        additional_info = self.types.copy()
+        if not self._started:
+            additional_info += ["skipped"]
 
         result = "{padding}- {icon} **{name}** {type}\n".format(
             padding="    " * level,
             name=self.display_name,
             icon=ICON_FAILED if self.is_failed() else ICON_SUCCESS,
-            type="({})".format(", ".join(self.types)) if self.types else ""
+            type="({})".format(", ".join(additional_info)) if additional_info else ""
         )
 
         inner_padding = "    " * (level + 1)
@@ -318,6 +329,7 @@ class _JunitResultsHandler(socketserver.StreamRequestHandler):
                         "append",
                         {"characters": "\nRunning " + current_test.display_name},
                     )
+                    current_test.set_started()
 
             elif header == MessageIds.TEST_FAILED:
                 current_test = container.get_by_id(int(args[0]))
@@ -355,7 +367,6 @@ class _JunitResultsHandler(socketserver.StreamRequestHandler):
 _{ts}_
 
 {items}
-
 """.format(ts=timestamp.strftime("%Y-%m-%d %H:%M:%S"), items=container.to_markdown(0))
         if runtime_ms:
             results += "\n_took: {} ms_\n".format(runtime_ms)

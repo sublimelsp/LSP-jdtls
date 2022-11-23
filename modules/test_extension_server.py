@@ -2,7 +2,7 @@ import socketserver
 import threading
 import types
 import sublime
-from LSP.plugin.core.typing import Optional, List, Dict, Literal
+from LSP.plugin.core.typing import Optional, List, Dict, Literal, Type
 import re
 from datetime import datetime
 
@@ -15,7 +15,7 @@ ICON_FAILED = "❌"
 TestType = Literal["dynamic", "suite"]
 
 
-class MessageIds:
+class EclipseTestRunnerMessageIds:
     """See: https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/master/org.eclipse.jdt.junit.runtime/src/org/eclipse/jdt/internal/junit/runner/MessageIds.java"""
 
     MSG_HEADER_LENGTH = 8
@@ -139,10 +139,10 @@ class Test:
         self.id = id
         self.name = name
         # removeprefix is not available in python 3.3
-        if self.name.startswith(MessageIds.IGNORED_TEST_PREFIX):
-            self.name = self.name[MessageIds.IGNORED_TEST_PREFIX:]
-        if self.name.startswith(MessageIds.ASSUMPTION_FAILED_TEST_PREFIX):
-            self.name = self.name[MessageIds.ASSUMPTION_FAILED_TEST_PREFIX:]
+        if self.name.startswith(EclipseTestRunnerMessageIds.IGNORED_TEST_PREFIX):
+            self.name = self.name[EclipseTestRunnerMessageIds.IGNORED_TEST_PREFIX:]
+        if self.name.startswith(EclipseTestRunnerMessageIds.ASSUMPTION_FAILED_TEST_PREFIX):
+            self.name = self.name[EclipseTestRunnerMessageIds.ASSUMPTION_FAILED_TEST_PREFIX:]
         self.count = count
         self.parent = parent
         self.display_name = display_name
@@ -165,7 +165,7 @@ class Test:
         if is_dynamic:
             self.types.append("dynamic")
 
-        match = re.match(MessageIds.TEST_NAME_FORMAT, self.name)
+        match = re.match(EclipseTestRunnerMessageIds.TEST_NAME_FORMAT, self.name)
         self.method_name = match.group(1) if match else None
         self.class_name = match.group(2) if match else None
 
@@ -283,7 +283,17 @@ class TestContainer:
         return "\n".join(root.to_markdown(level) for root in self._roots)
 
 
-class _JunitResultsHandler(socketserver.StreamRequestHandler):
+class _TestResultsHandler(socketserver.StreamRequestHandler):
+
+    def prepare(self):
+        ...
+
+    def parse(self, container: TestContainer, line: str) -> Optional[str]:
+        """Parse one line. The line is provided as-is (including trailing whitespace and newlines).
+        Optionally return a status string.
+        """
+        ...
+
     def handle(self):
         if PRINT_PROTOCOL:
             panel = sublime.active_window().create_output_panel("JDTLS Test Log")
@@ -297,15 +307,13 @@ class _JunitResultsHandler(socketserver.StreamRequestHandler):
         view.set_scratch(True)
         view.run_command(
             "insert",
-            {"characters": "Collecting results...\n"},
+            {"characters": "Collecting results...\n\n"},
         )
 
         container = TestContainer()
-        current_test = None  # type: Optional[Test]
-        runtime_ms = None  # type: Optional[int]
         timestamp = datetime.now()
-        # Used to cosume traces, actual, expected
-        line_consumer = None
+
+        self.prepare()
 
         while True:
             bline = self.rfile.readline()
@@ -315,74 +323,90 @@ class _JunitResultsHandler(socketserver.StreamRequestHandler):
 
             if panel:
                 panel.run_command("append", {"characters": line})
-            header, args = (
-                line[: MessageIds.MSG_HEADER_LENGTH],
-                line[MessageIds.MSG_HEADER_LENGTH :].rstrip().split(","),
-            )
 
-            if header == MessageIds.TEST_TREE:
-                container.insert_from_testtree(args)
-            elif header == MessageIds.TEST_START:
-                current_test = container.get_by_id(int(args[0]))
-                if current_test:
-                    view.run_command(
-                        "append",
-                        {"characters": "\nRunning " + current_test.display_name},
-                    )
-                    current_test.set_started()
-
-            elif header == MessageIds.TEST_FAILED:
-                current_test = container.get_by_id(int(args[0]))
-                if current_test:
-                    current_test.set_failed()
-            elif header == MessageIds.TEST_ERROR:
-                current_test = container.get_by_id(int(args[0]))
-                if current_test:
-                    current_test.set_failed()
-            elif header == MessageIds.TEST_END:
-                current_test = None
-            elif header == MessageIds.TRACE_START and current_test:
-                line_consumer = current_test.append_trace
-            elif header == MessageIds.ACTUAL_START and current_test:
-                line_consumer = current_test.append_actual
-            elif header == MessageIds.EXPECTED_START and current_test:
-                line_consumer = current_test.append_expected
-            elif header == MessageIds.TRACE_END:
-                line_consumer = None
-            elif header == MessageIds.ACTUAL_END:
-                line_consumer = None
-            elif header == MessageIds.EXPECTED_END:
-                line_consumer = None
-            elif header == MessageIds.TEST_RUN_END:
-                runtime_ms = int(args[0])
-            elif line_consumer:
-                line_consumer(line)
+            output = self.parse(container, line)
+            if output:
+                view.run_command("append",{"characters": output})
 
         results = """# Test Results
 _{ts}_
 
 {items}
 """.format(ts=timestamp.strftime("%Y-%m-%d %H:%M:%S"), items=container.to_markdown(0))
-        if runtime_ms:
-            results += "\n_took: {} ms_\n".format(runtime_ms)
+
+        results += "\n_took: {} s_\n".format((datetime.now() - timestamp).total_seconds())
         view.run_command("select_all")
         view.run_command("right_delete")
         view.run_command("append", {"characters": results})
 
+class _JunitResultsHandler(_TestResultsHandler):
 
-class JunitResultsServer:
-    """TCP Server that connects to https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/master/org.eclipse.jdt.junit.runtime/src/org/eclipse/jdt/internal/junit/runner/RemoteTestRunner.java"""
+    def prepare(self):
+        self.current_test = None  # type: Optional[Test]
+        # Used to cosume traces, actual, expected
+        self.line_consumer = None
 
+    def parse(self, container: TestContainer, line: str) -> Optional[str]:
+        header, args = (
+            line[: EclipseTestRunnerMessageIds.MSG_HEADER_LENGTH],
+            line[EclipseTestRunnerMessageIds.MSG_HEADER_LENGTH :].rstrip().split(","),
+        )
+
+        if header == EclipseTestRunnerMessageIds.TEST_TREE:
+            container.insert_from_testtree(args)
+        elif header == EclipseTestRunnerMessageIds.TEST_START:
+            self.current_test = container.get_by_id(int(args[0]))
+            if self.current_test:
+                self.current_test.set_started()
+                return "Running " + self.current_test.display_name + "\n"
+
+        elif header == EclipseTestRunnerMessageIds.TEST_FAILED:
+            self.current_test = container.get_by_id(int(args[0]))
+            if self.current_test:
+                self.current_test.set_failed()
+        elif header == EclipseTestRunnerMessageIds.TEST_ERROR:
+            self.current_test = container.get_by_id(int(args[0]))
+            if self.current_test:
+                self.current_test.set_failed()
+        elif header == EclipseTestRunnerMessageIds.TEST_END:
+            self.current_test = None
+        elif header == EclipseTestRunnerMessageIds.TRACE_START and self.current_test:
+            self.line_consumer = self.current_test.append_trace
+        elif header == EclipseTestRunnerMessageIds.ACTUAL_START and self.current_test:
+            self.line_consumer = self.current_test.append_actual
+        elif header == EclipseTestRunnerMessageIds.EXPECTED_START and self.current_test:
+            self.line_consumer = self.current_test.append_expected
+        elif header == EclipseTestRunnerMessageIds.TRACE_END:
+            self.line_consumer = None
+        elif header == EclipseTestRunnerMessageIds.ACTUAL_END:
+            self.line_consumer = None
+        elif header == EclipseTestRunnerMessageIds.EXPECTED_END:
+            self.line_consumer = None
+        elif header == EclipseTestRunnerMessageIds.TEST_RUN_END:
+            runtime_ms = int(args[0])
+        elif self.line_consumer:
+            self.line_consumer(line)
+
+
+class _TestNgResultsHandler(_TestResultsHandler):
+    pass
+
+
+class TestResultsServer:
     def __init__(self):
-        self.server = socketserver.TCPServer(("localhost", 0), _JunitResultsHandler)
+        self.server = socketserver.TCPServer(("localhost", 0), self._get_handler())
+
+    def _get_handler(self) -> Type[_TestResultsHandler]:
+        ...
 
     def get_port(self) -> int:
         return self.server.socket.getsockname()[1]
 
     def receive_test_results_async(self):
         """Handles a single request from a worker thread.
-        The RemoteTestRunner uses only a single stream request:
+        The current clients use only a single stream request:
         https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/f33d12e0bf97384ac97e71df290684814555db5c/org.eclipse.jdt.junit.runtime/src/org/eclipse/jdt/internal/junit/runner/RemoteTestRunner.java#L653
+        https://github.com/microsoft/vscode-java-test/blob/main/java-extension/com.microsoft.java.test.runner/src/main/java/com/microsoft/java/test/runner/Launcher.java
 
         After the request the server is shutdown and closed.
         """
@@ -393,3 +417,19 @@ class JunitResultsServer:
 
         thread = threading.Thread(target=_handle_single, daemon=True)
         thread.start()
+
+
+class JunitResultsServer(TestResultsServer):
+    """TCP Server that receives results from
+    https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/master/org.eclipse.jdt.junit.runtime/src/org/eclipse/jdt/internal/junit/runner/RemoteTestRunner.java"""
+
+    def _get_handler(self) -> Type[_TestResultsHandler]:
+        return _JunitResultsHandler
+
+
+class TestNgResultsServer(TestResultsServer):
+    """TCP Server that receives results from
+    https://github.com/microsoft/vscode-java-test/blob/main/java-extension/com.microsoft.java.test.runner/src/main/java/com/microsoft/java/test/runner/Launcher.java"""
+
+    def _get_handler(self) -> Type[_TestResultsHandler]:
+        return _TestNgResultsHandler

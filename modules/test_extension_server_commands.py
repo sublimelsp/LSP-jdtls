@@ -13,7 +13,7 @@ from .quick_input_panel import QuickSelect, SelectableItem
 from .text_extension_protocol import IJUnitLaunchArguments, ITestNavigationResult, IJavaTestItem, TestKind, TestLevel
 from .utils import flatten_test_items, sublime_debugger_available, LspJdtlsTextCommand, open_and_focus_uri
 from .installer import vscode_java_test_extension_path
-from .test_extension_server import JunitResultsServer
+from .test_extension_server import JunitResultsServer, TestNgResultsServer
 
 
 class LspJdtlsGenerateTests(LspJdtlsTextCommand):
@@ -189,7 +189,6 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
             "name": test_item["label"],
             "type": 'java',
             "request": 'launch',
-            "mainClass": launch_args["mainClass"],
             "projectName": launch_args["projectName"],
             "cwd": launch_args["workingDirectory"],
             "classPaths": launch_args["classpath"],
@@ -204,16 +203,24 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
             # The port in launch_args is a placeholder. (See vscode-java-test)
             port_idx = launch_args["programArguments"].index("-port") + 1
             launch_args["programArguments"][port_idx] = str(server.get_port())
-            debugger_config["args"] = " ".join(launch_args["programArguments"])
 
-            server.receive_test_results_async()
+            debugger_config["args"] = " ".join(launch_args["programArguments"])
+            debugger_config["mainClass"] = launch_args["mainClass"]
 
         elif test_item["testKind"] == TestKind.TestNG:
-            debugger_config["mainClass"] = "com.microsoft.java.test.runner.Launcher"
+            server = TestNgResultsServer()
+
             jarpath = os.path.join(vscode_java_test_extension_path(), "extension/server/com.microsoft.java.test.runner-jar-with-dependencies.jar")
+
+            debugger_config["mainClass"] = "com.microsoft.java.test.runner.Launcher"
             debugger_config["classPaths"] += [jarpath]
             # TODO: getApplicationArgs()
 
+        else:
+            raise ValueError("TestKind " + str(test_item["testKind"]) + " not supported")
+
+        print(debugger_config)
+        server.receive_test_results_async()
         window = self.view.window()
         if window:
             window.run_command("debugger", {"action": "open_and_start", "configuration": debugger_config})

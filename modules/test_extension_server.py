@@ -1,7 +1,8 @@
 import socketserver
 import threading
+import types
 import sublime
-from LSP.plugin.core.typing import Optional, List, Dict
+from LSP.plugin.core.typing import Optional, List, Dict, Literal
 import re
 from datetime import datetime
 
@@ -10,6 +11,8 @@ PRINT_PROTOCOL = True
 
 ICON_SUCCESS = "✔️"
 ICON_FAILED = "❌"
+
+TestType = Literal["dynamic", "suite"]
 
 
 class MessageIds:
@@ -140,13 +143,12 @@ class Test:
             self.name = self.name[MessageIds.IGNORED_TEST_PREFIX:]
         if self.name.startswith(MessageIds.ASSUMPTION_FAILED_TEST_PREFIX):
             self.name = self.name[MessageIds.ASSUMPTION_FAILED_TEST_PREFIX:]
-        self.is_suite = is_suite
         self.count = count
-        self.is_dynamic = is_dynamic
         self.parent = parent
         self.display_name = display_name
         self.parameter_types = parameter_types
         self.unique_id = unique_id
+        self.types = []  # type: List[TestType]
 
         self._children = []  # type: List["Test"]
         self._failed = False
@@ -156,6 +158,11 @@ class Test:
 
         if parent:
             parent._children.append(self)
+
+        if is_suite:
+            self.types.append("suite")
+        if is_dynamic:
+            self.types.append("dynamic")
 
         match = re.match(MessageIds.TEST_NAME_FORMAT, self.name)
         self.method_name = match.group(1) if match else None
@@ -192,10 +199,12 @@ class Test:
 
     def to_markdown(self, level: int) -> str:
         """Creates a markdown item including the results of this test."""
-        result = "{padding}- **{name}** {icon}\n".format(
+
+        result = "{padding}- {icon} **{name}** {type}\n".format(
             padding="    " * level,
             name=self.display_name,
-            icon=(ICON_FAILED if self.is_failed() else ICON_SUCCESS) if not self.is_suite else "",
+            icon=ICON_FAILED if self.is_failed() else ICON_SUCCESS,
+            type="({})".format(", ".join(self.types)) if self.types else ""
         )
 
         inner_padding = "    " * (level + 1)
@@ -205,16 +214,15 @@ class Test:
             return sep.join(line for line in lines.split("\n"))
 
         if self._failed:
-            if self._expected:
-                result += "\n" + inner_padding + "> expected: " + pad(self._expected).strip() + "\n"
-
-            if self._actual:
-                result += "\n" + inner_padding + "> was: " + pad(self._actual).strip() + "\n"
+            if self._expected and self._actual:
+                result += "\n"
+                result += inner_padding + "> expected: " + pad(self._expected).strip() + "<br>\n"
+                result += inner_padding + "> but was: " + pad(self._actual).strip() + "\n"
 
             if self._trace:
                 result += "\n"
                 result += inner_padding + "<details>\n"
-                result += inner_padding + "<summary>Trace</summary>\n"
+                result += inner_padding + "<summary>Trace</summary>\n\n"
                 result += inner_padding + "```\n"
                 result += inner_padding + pad(self._trace).strip() + "\n"
                 result += inner_padding + "```\n"

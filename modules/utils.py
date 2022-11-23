@@ -8,7 +8,9 @@ from .text_extension_protocol import IJavaTestItem
 
 
 def sublime_debugger_available() -> bool:
-    return True  # TODO
+    return "Packages/Debugger/debugger.sublime-settings" in sublime.find_resources(
+        "debugger.sublime-settings"
+    )
 
 
 def open_and_focus_uri(window: sublime.Window, uri: str):

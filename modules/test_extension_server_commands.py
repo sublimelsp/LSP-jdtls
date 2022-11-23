@@ -1,7 +1,6 @@
 import sublime
 import json
 import os
-import re
 
 from LSP.plugin import Session, parse_uri
 from LSP.plugin.core.edit import WorkspaceEdit, parse_workspace_edit
@@ -186,13 +185,6 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
         See resolveLaunchConfigurationForRunner
         """
 
-        server = JunitResultsServer()
-        server.receive_test_results_async()
-
-        # The port in launch_args is a placeholder. (See vscode-java-test)
-        port_idx = launch_args["programArguments"].index("-port") + 1
-        launch_args["programArguments"][port_idx] = str(server.get_port())
-
         debugger_config = {
             "name": test_item["label"],
             "type": 'java',
@@ -202,12 +194,21 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
             "cwd": launch_args["workingDirectory"],
             "classPaths": launch_args["classpath"],
             "modulePaths": launch_args["modulepath"],
-            "args": " ".join(launch_args["programArguments"]),
             "vmArgs": " ".join(launch_args["vmArguments"]),
             "noDebug": False,
         }
 
-        if test_item["testKind"] == TestKind.TestNG:
+        if test_item["testKind"] == TestKind.JUnit5 or test_item["testKind"] == TestKind.JUnit:
+            server = JunitResultsServer()
+
+            # The port in launch_args is a placeholder. (See vscode-java-test)
+            port_idx = launch_args["programArguments"].index("-port") + 1
+            launch_args["programArguments"][port_idx] = str(server.get_port())
+            debugger_config["args"] = " ".join(launch_args["programArguments"])
+
+            server.receive_test_results_async()
+
+        elif test_item["testKind"] == TestKind.TestNG:
             debugger_config["mainClass"] = "com.microsoft.java.test.runner.Launcher"
             jarpath = os.path.join(vscode_java_test_extension_path(), "extension/server/com.microsoft.java.test.runner-jar-with-dependencies.jar")
             debugger_config["classPaths"] += [jarpath]

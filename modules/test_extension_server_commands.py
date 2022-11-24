@@ -215,7 +215,6 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
             debugger_config["mainClass"] = "com.microsoft.java.test.runner.Launcher"
             debugger_config["classPaths"] += [jarpath]
             debugger_config["args"] = " ".join(self.get_test_ng_args(test_item, server))
-            # TODO: getApplicationArgs()
 
         else:
             raise ValueError("TestKind " + str(test_item["testKind"]) + " not supported")

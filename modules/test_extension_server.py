@@ -9,9 +9,6 @@ from LSP.plugin.core.typing import NotRequired, Optional, List, Dict, Literal, T
 
 from .utils import filter_lines, get_settings
 
-# Print TestRunner protocol to panel for debugging
-PRINT_PROTOCOL = True
-
 ICON_SUCCESS = "✔️"
 ICON_FAILED = "❌"
 
@@ -343,10 +340,7 @@ class _TestResultsHandler(socketserver.StreamRequestHandler):
         ...
 
     def handle(self):
-        if PRINT_PROTOCOL:
-            panel = sublime.active_window().create_output_panel("JDTLS Test Log")
-        else:
-            panel = None
+        panel = sublime.active_window().create_output_panel("JDTLS Test Log")
 
         view = sublime.active_window().new_file(
             0, sublime.find_resources("Markdown.sublime-syntax")[0]
@@ -369,8 +363,7 @@ class _TestResultsHandler(socketserver.StreamRequestHandler):
                 break
             line = bline.decode()
 
-            if panel:
-                panel.run_command("append", {"characters": line})
+            panel.run_command("append", {"characters": line})
 
             output = self.parse(container, line)
             if output:

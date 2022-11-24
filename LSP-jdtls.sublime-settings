@@ -46,6 +46,10 @@
     // Must be formatted like "0.71.0-202103052234" matching http://download.eclipse.org/jdtls/snapshots/.
     // Restart sublime after changing this setting
     "version": "",
+    // Removes test runner related lines from stacktraces.
+    // This results in shorter and cleaner stacktraces but may not be desired when
+    // working with or developing custom test frameworks.
+    "test.filterStacktrace": true,
     // The server-specific settings.
     "settings": {
         // Specifies the folder path to the JDK (11 or more recent) used to launch

@@ -214,16 +214,28 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
 
             debugger_config["mainClass"] = "com.microsoft.java.test.runner.Launcher"
             debugger_config["classPaths"] += [jarpath]
+            debugger_config["args"] = " ".join(self.get_test_ng_args(test_item, server))
             # TODO: getApplicationArgs()
 
         else:
             raise ValueError("TestKind " + str(test_item["testKind"]) + " not supported")
 
-        print(debugger_config)
         server.receive_test_results_async()
         window = self.view.window()
         if window:
             window.run_command("debugger", {"action": "open_and_start", "configuration": debugger_config})
+
+    def get_test_ng_args(self, test_item: IJavaTestItem, server: TestNgResultsServer) -> List[str]:
+        args = [str(server.get_port()), "testng"]
+
+        flattened = flatten_test_items([test_item])
+        for test in flattened:
+            if test["testLevel"] == TestLevel.Method:
+                # id has pattern <project>@<class>#<method>
+                split = test["id"].split("@")
+                if len(split) == 2:
+                    args.append(split[1])
+        return args
 
 
 class LspJdtlsRunTestClass(LspJdtlsTestCommand):

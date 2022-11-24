@@ -1,10 +1,13 @@
 import socketserver
 import threading
-import types
 import sublime
-from LSP.plugin.core.typing import Optional, List, Dict, Literal, Type
 import re
-from datetime import datetime
+import json
+from datetime import datetime, timedelta
+
+from LSP.plugin.core.typing import NotRequired, Optional, List, Dict, Literal, Type, Union, TypedDict, Enum
+
+from .utils import filter_lines, get_settings
 
 # Print TestRunner protocol to panel for debugging
 PRINT_PROTOCOL = True
@@ -12,7 +15,11 @@ PRINT_PROTOCOL = True
 ICON_SUCCESS = "✔️"
 ICON_FAILED = "❌"
 
-TestType = Literal["dynamic", "suite"]
+AdditionalTestInfo = Literal["dynamic", "suite", "skipped"]
+
+
+def enable_stack_trace_filter() -> bool:
+    return get_settings().get("test.filterStacktrace")
 
 
 class EclipseTestRunnerMessageIds:
@@ -123,18 +130,39 @@ class EclipseTestRunnerMessageIds:
     """MessageFormat to encode test method identifiers."""
 
 
+# See https://github.com/microsoft/vscode-java-test/blob/main/java-extension/com.microsoft.java.test.runner/src/main/java/com/microsoft/java/test/runner/common/TestMessageConstants.java
+class TestNgTestMessageName(Enum):
+    TEST_STARTED = "testStarted"
+    TEST_FINISHED = "testFinished"
+    TEST_FAILED = "testFailed"
+
+
+TestNgTestMessageAttributes = TypedDict("TestNgTestMessageAttributes", {
+    "name": str,
+    "message": NotRequired[str],
+    "trace": NotRequired[str],
+    "duration": NotRequired[str]
+})
+
+
+TestNgTestMessageItem = TypedDict("TestNgTestMessageItem", {
+    "name": TestNgTestMessageName,
+    "attributes": TestNgTestMessageAttributes
+})
+
+
 class Test:
     def __init__(
         self,
-        id: int,
+        id: Union[int, str],
         name: str,
-        is_suite: bool,
-        count: int,
-        is_dynamic: bool,
-        parent: Optional["Test"],
-        display_name: str,
-        parameter_types: str,
-        unique_id: str,
+        is_suite: Optional[bool] = False,
+        count: Optional[int] = 1,
+        is_dynamic: Optional[bool] = False,
+        parent: Optional["Test"] = None,
+        display_name: Optional[str] = None,
+        parameter_types: Optional[str] = None,
+        unique_id: Optional[str] = None,
     ):
         self.id = id
         self.name = name
@@ -148,7 +176,7 @@ class Test:
         self.display_name = display_name
         self.parameter_types = parameter_types
         self.unique_id = unique_id
-        self.types = []  # type: List[TestType]
+        self.additional_info = []  # type: List[AdditionalTestInfo]
 
         self._children = []  # type: List["Test"]
         self._failed = False
@@ -156,14 +184,16 @@ class Test:
         self._actual = ""  # type: str
         self._expected = ""  # type: str
         self._started = False  # type: bool
+        self._runtime = None  # type: Optional[timedelta]
+        self._message = None  # type: Optional[str]
 
         if parent:
             parent._children.append(self)
 
         if is_suite:
-            self.types.append("suite")
+            self.additional_info.append("suite")
         if is_dynamic:
-            self.types.append("dynamic")
+            self.additional_info.append("dynamic")
 
         match = re.match(EclipseTestRunnerMessageIds.TEST_NAME_FORMAT, self.name)
         self.method_name = match.group(1) if match else None
@@ -187,6 +217,12 @@ class Test:
     def get_children(self):
         return self._children.copy()
 
+    def add_message(self, message: str):
+        self._message = message
+
+    def get_message(self) -> Optional[str]:
+        return self._message
+
     def append_trace(self, line: str):
         self._trace += line
 
@@ -205,15 +241,23 @@ class Test:
     def get_expected(self) -> Optional[str]:
         return self._expected
 
+    def set_runtime(self, runtime: timedelta):
+        self._runtime = runtime
+
+    def get_runtime(self) -> Optional[timedelta]:
+        return self._runtime
+
     def to_markdown(self, level: int) -> str:
         """Creates a markdown item including the results of this test."""
-        additional_info = self.types.copy()
+        additional_info = self.additional_info.copy()  # type: List[str]
         if not self._started:
-            additional_info += ["skipped"]
+            additional_info.append("skipped")
+        if self._runtime:
+            additional_info += [str(self._runtime.total_seconds()) + " s"]
 
         result = "{padding}- {icon} **{name}** {type}\n".format(
             padding="    " * level,
-            name=self.display_name,
+            name=self.display_name or self.name,
             icon=ICON_FAILED if self.is_failed() else ICON_SUCCESS,
             type="({})".format(", ".join(additional_info)) if additional_info else ""
         )
@@ -225,6 +269,10 @@ class Test:
             return sep.join(line for line in lines.split("\n"))
 
         if self._failed:
+            if self._message:
+                result += "\n"
+                result += inner_padding + "> message: " + pad(self._message).strip() + "\n"
+
             if self._expected and self._actual:
                 result += "\n"
                 result += inner_padding + "> expected: " + pad(self._expected).strip() + "<br>\n"
@@ -248,10 +296,10 @@ class Test:
 
 class TestContainer:
     def __init__(self):
-        self._by_id = {}  # type: Dict[int, Test]
+        self._by_id = {}  # type: Dict[Union[int, str], Test]
         self._roots = []  # type: List[Test]
 
-    def get_by_id(self, id: int) -> Optional[Test]:
+    def get_by_id(self, id: Union[int, str]) -> Optional[Test]:
         return self._by_id.get(id, None)
 
     def insert(self, test: Test):
@@ -326,7 +374,7 @@ class _TestResultsHandler(socketserver.StreamRequestHandler):
 
             output = self.parse(container, line)
             if output:
-                view.run_command("append",{"characters": output})
+                view.run_command("append", {"characters": output})
 
         results = """# Test Results
 _{ts}_
@@ -339,12 +387,28 @@ _{ts}_
         view.run_command("right_delete")
         view.run_command("append", {"characters": results})
 
+
 class _JunitResultsHandler(_TestResultsHandler):
 
     def prepare(self):
         self.current_test = None  # type: Optional[Test]
         # Used to cosume traces, actual, expected
         self.line_consumer = None
+        self.stack_trace_filter = [] if not enable_stack_trace_filter() else [
+            "org.eclipse.jdt.internal.junit.runner.",
+            "org.eclipse.jdt.internal.junit4.runner.",
+            "org.eclipse.jdt.internal.junit5.runner.",
+            "org.eclipse.jdt.internal.junit.ui.",
+            "junit.framework.TestCase",
+            "junit.framework.TestResult",
+            "junit.framework.TestResult$1",
+            "junit.framework.TestSuite",
+            "junit.framework.Assert",
+            "org.junit.",
+            "java.lang.reflect.Method.invoke",
+            "sun.reflect.",
+            "jdk.internal.reflect.",
+        ]
 
     def parse(self, container: TestContainer, line: str) -> Optional[str]:
         header, args = (
@@ -358,7 +422,7 @@ class _JunitResultsHandler(_TestResultsHandler):
             self.current_test = container.get_by_id(int(args[0]))
             if self.current_test:
                 self.current_test.set_started()
-                return "Running " + self.current_test.display_name + "\n"
+                return "Running " + str(self.current_test.display_name or self.current_test.name) + "\n"
 
         elif header == EclipseTestRunnerMessageIds.TEST_FAILED:
             self.current_test = container.get_by_id(int(args[0]))
@@ -371,7 +435,7 @@ class _JunitResultsHandler(_TestResultsHandler):
         elif header == EclipseTestRunnerMessageIds.TEST_END:
             self.current_test = None
         elif header == EclipseTestRunnerMessageIds.TRACE_START and self.current_test:
-            self.line_consumer = self.current_test.append_trace
+            self.line_consumer = lambda line: self.current_test.append_trace(filter_lines(line, self.stack_trace_filter)) if self.current_test else ""
         elif header == EclipseTestRunnerMessageIds.ACTUAL_START and self.current_test:
             self.line_consumer = self.current_test.append_actual
         elif header == EclipseTestRunnerMessageIds.EXPECTED_START and self.current_test:
@@ -383,13 +447,56 @@ class _JunitResultsHandler(_TestResultsHandler):
         elif header == EclipseTestRunnerMessageIds.EXPECTED_END:
             self.line_consumer = None
         elif header == EclipseTestRunnerMessageIds.TEST_RUN_END:
-            runtime_ms = int(args[0])
+            # runtime_ms = int(args[0])
+            pass
         elif self.line_consumer:
             self.line_consumer(line)
 
 
 class _TestNgResultsHandler(_TestResultsHandler):
-    pass
+    LINE_REGEX = r"@@<TestRunner-(.*?)-TestRunner>"
+    """Regular expression for a single line. The first group captures the JSON representation."""
+
+    def prepare(self):
+        self.stack_trace_filter = [] if not enable_stack_trace_filter() else [
+            "com.microsoft.java.test.runner.",
+            "org.testng.internal.",
+            "org.testng.TestRunner",
+            "org.testng.SuiteRunner",
+            "org.testng.TestNG",
+            "org.testng.Assert",
+            "java.lang.reflect.Method.invoke",
+            "sun.reflect.",
+            "jdk.internal.reflect.",
+        ]
+
+    def parse(self, container: TestContainer, line: str) -> Optional[str]:
+        match = re.match(self.LINE_REGEX, line.strip())
+        if not match:
+            return
+        json_string = match.group(1)
+        data = json.loads(json_string)  # type: TestNgTestMessageItem
+
+        if data["name"] == TestNgTestMessageName.TEST_STARTED:
+            test = Test(data["attributes"]["name"], data["attributes"]["name"])
+            test.set_started()
+            container.insert(test)
+            return "Running " + test.name + "\n"
+        if data["name"] == TestNgTestMessageName.TEST_FINISHED:
+            test = container.get_by_id(data["attributes"]["name"])
+            if test:
+                if "duration" in data["attributes"]:
+                    test.set_runtime(timedelta(seconds=float(data["attributes"]["duration"]) / 1000))
+        if data["name"] == TestNgTestMessageName.TEST_FAILED:
+            test = container.get_by_id(data["attributes"]["name"])
+            if test:
+                test.set_failed()
+                if "message" in data["attributes"]:
+                    test.add_message(data["attributes"]["message"])
+                if "trace" in data["attributes"]:
+                    test.append_trace(filter_lines(data["attributes"]["trace"], self.stack_trace_filter))
+                if "duration" in data["attributes"]:
+                    test.set_runtime(timedelta(seconds=float(data["attributes"]["duration"]) / 1000))
 
 
 class TestResultsServer:

@@ -3,8 +3,12 @@ import sublime
 from LSP.plugin import LspTextCommand, Session, parse_uri
 from LSP.plugin.core.typing import List
 
-from .constants import SESSION_NAME
+from .constants import SESSION_NAME, SETTINGS_FILENAME
 from .text_extension_protocol import IJavaTestItem
+
+
+def get_settings() -> sublime.Settings:
+    return sublime.load_settings(SETTINGS_FILENAME)
 
 
 def sublime_debugger_available() -> bool:
@@ -26,6 +30,10 @@ def flatten_test_items(test_items: List[IJavaTestItem]) -> List[IJavaTestItem]:
         if "children" in item:
             test_list += flatten_test_items(item["children"])
     return test_list
+
+
+def filter_lines(string: str, patterns: List[str]):
+    return "\n".join(line for line in string.splitlines(False) if not [p for p in patterns if p in line])
 
 
 class LspJdtlsTextCommand(LspTextCommand):

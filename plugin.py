@@ -29,11 +29,10 @@ from .modules.client_command_handler import execute_client_command  # noqa: E402
 from .modules.test_extension_server_commands import LspJdtlsGenerateTests, LspJdtlsGotoTest, LspJdtlsRunTestAtCursor, LspJdtlsRunTestClass, LspJdtlsRunTest  # noqa: E402, F401
 from .modules.debug_extension import LspJdtlsRefreshWorkspace, DebuggerJdtlsBridgeRequest  # noqa: E402, F401
 from .modules.quick_input_panel import JdtlsInputCommand  # noqa: E402, F401
-from .modules.utils import LspJdtlsTextCommand  # noqa: E402
+from .modules.utils import get_settings, LspJdtlsTextCommand  # noqa: E402
 
 from .modules.constants import DATA_DIR  # noqa: E402
 from .modules.constants import SESSION_NAME  # noqa: E402
-from .modules.constants import SETTINGS_FILENAME  # noqa: E402
 
 from .modules import installer  # noqa: E402
 
@@ -59,7 +58,7 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
 
     @classmethod
     def additional_variables(cls) -> Optional[Dict[str, str]]:
-        settings = sublime.load_settings(SETTINGS_FILENAME)
+        settings = get_settings()
         java_home = settings.get("settings").get("java.home")
         if not java_home:
             java_home = os.environ.get("JAVA_HOME")

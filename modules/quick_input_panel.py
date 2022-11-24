@@ -1,5 +1,5 @@
 """
-Implements an high level API to query a selection or an text from an user.
+Implements an high level API to query a selection or a text from an user.
 
 Usage:
 QuickSelect(...).show().then( do_something_with_selection )
@@ -29,7 +29,7 @@ class SelectableItem:
         """
         Constructs a new instance.
 
-        :param      label:      The label that is mached agains the input
+        :param      label:      The label that is matched against the input
         :param      value:      The value that is returned when the selection is done
         :param      details:    The details show below the item
         :param      annotation: The annotation shown to the right of the item

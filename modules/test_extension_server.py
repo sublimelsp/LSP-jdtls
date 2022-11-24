@@ -385,7 +385,7 @@ class _JunitResultsHandler(_TestResultsHandler):
 
     def prepare(self):
         self.current_test = None  # type: Optional[Test]
-        # Used to cosume traces, actual, expected
+        # Used to consume traces, actual, expected
         self.line_consumer = None
         self.stack_trace_filter = [] if not enable_stack_trace_filter() else [
             "org.eclipse.jdt.internal.junit.runner.",

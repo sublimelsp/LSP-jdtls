@@ -33,7 +33,7 @@ def flatten_test_items(test_items: List[IJavaTestItem]) -> List[IJavaTestItem]:
 
 
 def filter_lines(string: str, patterns: List[str]):
-    return "\n".join(line for line in string.splitlines(False) if not [p for p in patterns if p in line])
+    return "".join(line for line in string.splitlines(True) if not [p for p in patterns if p in line])
 
 
 class LspJdtlsTextCommand(LspTextCommand):

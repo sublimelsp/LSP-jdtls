@@ -59,9 +59,13 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
     @classmethod
     def additional_variables(cls) -> Optional[Dict[str, str]]:
         settings = get_settings()
-        java_home = settings.get("settings").get("java.home")
+
+        java_home = settings.get("settings").get("java.jdt.ls.java.home")
+        if not java_home:
+            java_home = settings.get("settings").get("java.home")
         if not java_home:
             java_home = os.environ.get("JAVA_HOME")
+
         if java_home:
             java_executable = os.path.join(java_home, "bin", "java")
         else:
@@ -111,7 +115,7 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
             jar_index = configuration.command.index("-jar")
             configuration.command.insert(jar_index, javaagent_arg)
         elif (
-            not configuration.settings.get("jdtls.enableLombok")
+            not configuration.settings.get("java.jdt.ls.lombokSupport.enabled")
             and javaagent_arg in configuration.command
         ):
             configuration.command.remove(javaagent_arg)

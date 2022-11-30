@@ -14,5 +14,39 @@
     {
         "caption": "LSP-jdtls: Refresh Workspace",
         "command": "lsp_jdtls_refresh_workspace",
+    },
+    {
+        "caption": "LSP-jdtls: Generate tests...",
+        "command": "lsp_jdtls_generate_tests",
+    },
+    {
+        "caption": "LSP-jdtls: Goto Test",
+        "command": "lsp_jdtls_goto_test",
+        "args": {
+            "goto_test_or_implementation": true
+        }
+    },
+    {
+        "caption": "LSP-jdtls: Run Test Class",
+        "command": "lsp_jdtls_run_test_class",
+    },
+    {
+        "caption": "LSP-jdtls: Run Test At Cursor",
+        "command": "lsp_jdtls_run_test_at_cursor",
+    },
+    {
+        "caption": "LSP-jdtls: Run Test...",
+        "command": "lsp_jdtls_run_test",
+    },
+    {
+        "caption": "LSP-jdtls: Goto Implementation",
+        "command": "lsp_jdtls_goto_test",
+        "args": {
+            "goto_test_or_implementation": false
+        }
+    },
+    {
+        "caption": "LSP-jdtls",
+        "command": "jdtls_input",
     }
 ]

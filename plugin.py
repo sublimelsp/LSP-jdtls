@@ -31,8 +31,7 @@ from .modules.debug_extension import LspJdtlsRefreshWorkspace, DebuggerJdtlsBrid
 from .modules.quick_input_panel import JdtlsInputCommand  # noqa: E402, F401
 from .modules.utils import get_settings, LspJdtlsTextCommand  # noqa: E402
 
-from .modules.constants import DATA_DIR  # noqa: E402
-from .modules.constants import SESSION_NAME  # noqa: E402
+from .modules.constants import DATA_DIR, LOMBOK_ENABLED_SETTING, SESSION_NAME  # noqa: E402
 
 from .modules import installer  # noqa: E402
 
@@ -109,13 +108,13 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
 
         # Prevent adding the argument multiple times
         if (
-            configuration.settings.get("jdtls.enableLombok")
+            configuration.settings.get(LOMBOK_ENABLED_SETTING)
             and javaagent_arg not in configuration.command
         ):
             jar_index = configuration.command.index("-jar")
             configuration.command.insert(jar_index, javaagent_arg)
         elif (
-            not configuration.settings.get("java.jdt.ls.lombokSupport.enabled")
+            not configuration.settings.get(LOMBOK_ENABLED_SETTING)
             and javaagent_arg in configuration.command
         ):
             configuration.command.remove(javaagent_arg)

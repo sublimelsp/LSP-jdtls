@@ -13,4 +13,6 @@ STORAGE_DIR = "LSP-jdtls"
 SESSION_NAME = "jdtls"
 INSTALL_DIR = "server"
 DATA_DIR = "data"
+
+LOMBOK_ENABLED_SETTING = "java.jdt.ls.lombokSupport.enabled"
 # fmt: on

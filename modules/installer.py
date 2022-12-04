@@ -20,6 +20,7 @@ from .constants import JDTLS_URL
 from .constants import LOMBOK_URL
 from .constants import DEBUG_PLUGIN_URL
 from .constants import VSCODE_JAVA_TEST_EXTENSION_URL
+from .constants import DATA_DIR
 
 
 def _jdtls_version() -> str:
@@ -83,6 +84,10 @@ def jdtls_path() -> str:
     return os.path.join(
         install_path(), "jdtls-{version}".format(version=_jdtls_version())
     )
+
+
+def jdtls_data_path() -> str:
+    return os.path.join(storage_subpath(), DATA_DIR)
 
 
 def vscode_java_test_extension_path() -> str:

@@ -10,9 +10,11 @@ from LSP.plugin.core.typing import Optional, Any, List, Dict, Callable
 
 import os
 import sublime
+import sublime_plugin
 import re
 import json
 import sys
+import shutil
 
 # TODO: Not part of the public API :(
 from LSP.plugin.core.protocol import DocumentUri
@@ -29,7 +31,7 @@ from .modules.debug_extension import LspJdtlsRefreshWorkspace, DebuggerJdtlsBrid
 from .modules.quick_input_panel import JdtlsInputCommand  # noqa: E402, F401
 from .modules.utils import get_settings, LspJdtlsTextCommand  # noqa: E402
 
-from .modules.constants import DATA_DIR, SETTING_JAVA_HOME, SETTING_JAVA_HOME_DEPRECATED, SETTING_LOMBOK_ENABLED, SESSION_NAME  # noqa: E402
+from .modules.constants import SETTING_JAVA_HOME, SETTING_JAVA_HOME_DEPRECATED, SETTING_LOMBOK_ENABLED, SESSION_NAME  # noqa: E402
 
 from .modules.protocol_extensions_handler import handle_actionable_notification  # noqa: E402
 
@@ -94,7 +96,7 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
             else "true",
             "jdtls_platform": _jdtls_platform(),
             "serverdir": installer.jdtls_path(),
-            "datadir": os.path.join(installer.storage_subpath(), DATA_DIR),
+            "datadir": installer.jdtls_data_path(),
             "launcher_version": launcher_version,
             "debug_plugin_path": installer.debug_plugin_jar_path(),
         }
@@ -232,6 +234,14 @@ class LspJdtlsBuildWorkspace(LspJdtlsTextCommand):
 
     def on_error_async(self, error):
         pass
+
+
+class JdtlsClearData(sublime_plugin.TextCommand):
+    def run(self, edit) -> None:
+        if sublime.ok_cancel_dialog("Are you sure you want to clear " + installer.jdtls_data_path()):
+            if os.path.exists(installer.jdtls_data_path()):
+                shutil.rmtree(installer.jdtls_data_path())
+                self.view.run_command("lsp_restart_server", {"config_name": SESSION_NAME})
 
 
 def plugin_loaded() -> None:

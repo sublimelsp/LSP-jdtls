@@ -36,6 +36,14 @@ jdtls can do a lot of cool things, like
 | lsp_jdtls_run_test_class      | Runs the test class in the active view                | LSP-jdtls: Run Test Class                             | _(experimental)_ Requires [Debugger](https://github.com/daveleroy/sublime_debugger)|
 | lsp_jdtls_run_test_at_cursor  | Runs the test at the first cursor                     | LSP-jdtls: Run Test At Cursor                         | _(experimental)_ Requires [Debugger](https://github.com/daveleroy/sublime_debugger)|
 | lsp_jdtls_run_test            | Opens a panel to run a test in the active view        | LSP-jdtls: Run Test...                                | _(experimental)_ Requires [Debugger](https://github.com/daveleroy/sublime_debugger)|
+| jdtls_clear_data              | Clears the server data directory                      | LSP-jdtls: Clear jdtls_clear_data                     | |
+
+## Troubleshoot
+
+### Server exits with code `13`
+The server caches workspace specific information. When this data is corrupted the server crashes with exit code `13` and the server is disabled for the current project.
+
+Run the command `LSP-jdtls: Clear data` from the command palette and re-enable the server using the command `LSP: Enable Language Server in Project`.
 
 ## Licenses
 

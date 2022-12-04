@@ -7,6 +7,7 @@
             "default": "// Settings in here override those in \"LSP-jdtls/LSP-jdtls.sublime-settings\"\n{\n\t$0\n}\n"
         }
     },
+    // LSP text / window commands
     {
         "caption": "LSP-jdtls: Build Workspace",
         "command": "lsp_jdtls_build_workspace",
@@ -44,6 +45,11 @@
         "args": {
             "goto_test_or_implementation": false
         }
+    },
+    // Text / window commands
+    {
+        "caption": "LSP-jdtls: Clear data",
+        "command": "jdtls_clear_data",
     },
     {
         "caption": "LSP-jdtls",

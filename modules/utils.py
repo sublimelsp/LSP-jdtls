@@ -1,10 +1,30 @@
 import sublime
 
 from LSP.plugin import LspTextCommand, Session, parse_uri
-from LSP.plugin.core.typing import List
+from LSP.plugin.core.typing import List, Any
 
 from .constants import SESSION_NAME, SETTINGS_FILENAME
 from .text_extension_protocol import IJavaTestItem
+
+
+def set_lsp_project_setting(window: sublime.Window, setting: str, value: Any):
+    if not window.project_file_name():
+        sublime.message_dialog("A sublime-project is required to save project settings.")
+        window.run_command("save_project_and_workspace_as")
+
+    project_data = window.project_data() or {}
+    project_keys = ["settings", "LSP", SESSION_NAME, "settings"]
+
+    current = project_data
+    for project_key in project_keys:
+        subkey = current.get(project_key, {})
+        current[project_key] = subkey
+        current = subkey
+
+    current[setting] = value
+
+    sublime.set_timeout(lambda: window.set_project_data(project_data))
+    sublime.set_timeout(lambda: print(window.project_data), 100)
 
 
 def get_settings() -> sublime.Settings:

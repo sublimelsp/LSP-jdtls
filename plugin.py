@@ -4,8 +4,9 @@ from LSP.plugin import Session
 from LSP.plugin import unregister_plugin
 from LSP.plugin import Request
 from LSP.plugin import WorkspaceFolder
+from LSP.plugin.core.sessions import ExecuteCommandParams
 from LSP.plugin.core.types import ClientConfig
-from LSP.plugin.core.typing import Optional, Any, List, Dict, Mapping, Callable
+from LSP.plugin.core.typing import Optional, Any, List, Dict, Callable
 
 import os
 import sublime
@@ -14,10 +15,7 @@ import json
 import sys
 
 # TODO: Not part of the public API :(
-from LSP.plugin.core.edit import apply_workspace_edit
-from LSP.plugin.core.edit import parse_workspace_edit
 from LSP.plugin.core.protocol import DocumentUri
-from LSP.plugin.core.views import location_to_encoded_filename
 from LSP.plugin.core.views import text_document_identifier
 
 # Fix reloading for submodules
@@ -25,13 +23,15 @@ for m in list(sys.modules.keys()):
     if m.startswith(__package__ + ".") and m != __name__:
         del sys.modules[m]
 
-from .modules.client_command_handler import execute_client_command  # noqa: E402
+from .modules.client_command_handler import handle_client_command, handle_client_command_request  # noqa: E402
 from .modules.test_extension_server_commands import LspJdtlsGenerateTests, LspJdtlsGotoTest, LspJdtlsRunTestAtCursor, LspJdtlsRunTestClass, LspJdtlsRunTest  # noqa: E402, F401
 from .modules.debug_extension import LspJdtlsRefreshWorkspace, DebuggerJdtlsBridgeRequest  # noqa: E402, F401
 from .modules.quick_input_panel import JdtlsInputCommand  # noqa: E402, F401
 from .modules.utils import get_settings, LspJdtlsTextCommand  # noqa: E402
 
-from .modules.constants import DATA_DIR, LOMBOK_ENABLED_SETTING, SESSION_NAME  # noqa: E402
+from .modules.constants import DATA_DIR, SETTING_JAVA_HOME, SETTING_JAVA_HOME_DEPRECATED, SETTING_LOMBOK_ENABLED, SESSION_NAME  # noqa: E402
+
+from .modules.protocol_extensions_handler import handle_actionable_notification  # noqa: E402
 
 from .modules import installer  # noqa: E402
 
@@ -59,9 +59,9 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
     def additional_variables(cls) -> Optional[Dict[str, str]]:
         settings = get_settings()
 
-        java_home = settings.get("settings").get("java.jdt.ls.java.home")
+        java_home = settings.get("settings").get(SETTING_JAVA_HOME)
         if not java_home:
-            java_home = settings.get("settings").get("java.home")
+            java_home = settings.get("settings").get(SETTING_JAVA_HOME_DEPRECATED)
         if not java_home:
             java_home = os.environ.get("JAVA_HOME")
 
@@ -108,13 +108,13 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
 
         # Prevent adding the argument multiple times
         if (
-            configuration.settings.get(LOMBOK_ENABLED_SETTING)
+            configuration.settings.get(SETTING_LOMBOK_ENABLED)
             and javaagent_arg not in configuration.command
         ):
             jar_index = configuration.command.index("-jar")
             configuration.command.insert(jar_index, javaagent_arg)
         elif (
-            not configuration.settings.get(LOMBOK_ENABLED_SETTING)
+            not configuration.settings.get(SETTING_LOMBOK_ENABLED)
             and javaagent_arg in configuration.command
         ):
             configuration.command.remove(javaagent_arg)
@@ -174,55 +174,14 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
     #########################
 
     def on_pre_server_command(
-        self, command: Mapping[str, Any], done: Callable[[], None]
+        self, command: ExecuteCommandParams, done: Callable[[], None]
     ) -> bool:
         session = self.weaksession()
         if not session:
             return False
-        cmd = command["command"]
-        if cmd == "java.apply.workspaceEdit":
-            changes = parse_workspace_edit(command["arguments"][0])
-            window = session.window
-            sublime.set_timeout(
-                lambda: apply_workspace_edit(window, changes).then(
-                    lambda _: sublime.set_timeout_async(done)
-                )
-            )
-            return True
-        elif cmd == "java.show.references":
-            self._show_quick_panel(session, command["arguments"][2])
-            done()
+        if handle_client_command(session, done, command["command"], command["arguments"] if "arguments" in command else []):
             return True
         return False
-
-    def _show_quick_panel(
-        self, session: Session, references: List[Dict[str, Any]]
-    ) -> None:
-        self.reflist = [location_to_encoded_filename(r) for r in references]  # type: ignore
-        session.window.show_quick_panel(
-            self.reflist,
-            self._on_ref_choice,
-            sublime.KEEP_OPEN_ON_FOCUS_LOST,
-            0,
-            self._on_ref_highlight,
-        )
-
-    def _on_ref_choice(self, index: int) -> None:
-        self._open_ref_index(index, transient=False)
-
-    def _on_ref_highlight(self, index: int) -> None:
-        self._open_ref_index(index, transient=True)
-
-    def _open_ref_index(self, index: int, transient: bool = False) -> None:
-        if index != -1:
-            session = self.weaksession()
-            if session:
-                flags = (
-                    sublime.ENCODED_POSITION | sublime.TRANSIENT
-                    if transient
-                    else sublime.ENCODED_POSITION
-                )
-                session.window.open_file(self.reflist[index], flags)
 
     # notification and request handlers
 
@@ -239,7 +198,13 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         session = self.weaksession()
         if not session:
             return
-        execute_client_command(session, request_id, params["command"], params["arguments"])
+        handle_client_command_request(session, request_id, params["command"], params["arguments"])
+
+    def m_language_actionableNotification(self, params: Any) -> None:
+        session = self.weaksession()
+        if not session:
+            return
+        handle_actionable_notification(session, params)
 
 
 class LspJdtlsBuildWorkspace(LspJdtlsTextCommand):

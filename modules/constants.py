@@ -14,5 +14,8 @@ SESSION_NAME = "jdtls"
 INSTALL_DIR = "server"
 DATA_DIR = "data"
 
-LOMBOK_ENABLED_SETTING = "java.jdt.ls.lombokSupport.enabled"
+SETTING_LOMBOK_ENABLED = "java.jdt.ls.lombokSupport.enabled"
+SETTING_JAVA_HOME = "java.jdt.ls.java.home"
+SETTING_JAVA_HOME_DEPRECATED = "java.home"
+SETTING_ENABLE_NULL_ANALYSIS = "java.compile.nullAnalysis.mode"
 # fmt: on

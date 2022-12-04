@@ -133,7 +133,7 @@
         // Specifies how modifications on build files update the Java
         // classpath/configuration
         // possible values: disabled, interactive, automatic
-        "java.configuration.updateBuildConfiguration": "interactive",
+        "java.configuration.updateBuildConfiguration": "automatic",
         // Preferred content provider (a 3rd party decompiler id, usually)
         "java.contentProvider.preferred": null,
         // Specifies the severity of the message when the classpath is incomplete
@@ -220,7 +220,7 @@
         // Specifies whether to import the Java projects, when opening the folder in
         // Hybrid mode for the first time.
         // possible values: disabled, interactive, automatic
-        "java.project.importOnFirstTimeStartup": "interactive",
+        "java.project.importOnFirstTimeStartup": "automatic",
         // Configure glob patterns for referencing local libraries to a Java
         // project.
         "java.project.referencedLibraries": [
@@ -301,7 +301,7 @@
             "org.eclipse.jdt.annotation.Nullable",
             "org.springframework.lang.Nullable"
         ],
-        "java.compile.nullAnalysis.mode": "interactive",
+        "java.compile.nullAnalysis.mode": "automatic",
         "java.cleanup.actionsOnSave": []
     }
 }

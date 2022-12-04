@@ -64,7 +64,7 @@ def handle_client_command(session: Session, done: Callable[[], None], command, a
 ## vscode-java EXTENSION
 
 def _reload_bundles(session: Session, response_callback: Callable[[Any], None]):
-    pass
+    response_callback([])  # we do include all extensions from the start
 
 
 ## vscode-java-test EXTENSION

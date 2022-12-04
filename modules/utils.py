@@ -24,7 +24,6 @@ def set_lsp_project_setting(window: sublime.Window, setting: str, value: Any):
     current[setting] = value
 
     sublime.set_timeout(lambda: window.set_project_data(project_data))
-    sublime.set_timeout(lambda: print(window.project_data), 100)
 
 
 def get_settings() -> sublime.Settings:

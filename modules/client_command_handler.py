@@ -10,7 +10,7 @@ import sublime
 from LSP.plugin import Response, Session
 from LSP.plugin.core.edit import apply_workspace_edit
 from LSP.plugin.core.edit import parse_workspace_edit
-from LSP.plugin.core.types import Any, Callable, Optional, List, Dict
+from LSP.plugin.core.types import Any, Callable, Optional, List
 from LSP.plugin.core.views import location_to_encoded_filename
 from .utils import set_lsp_project_setting
 from .protocol import FeatureStatus

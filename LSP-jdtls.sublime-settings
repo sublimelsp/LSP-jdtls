@@ -155,7 +155,7 @@
         // unknown setting
         "java.format.settings.url": null,
         // Enable/disable the implementations code lens.
-        "java.implementationsCodeLens.enabled": true,
+        "java.implementationsCodeLens.enabled": false,
         // The number of days (if enabled) to keep unused workspace cache data.
         // Beyond this limit, cached workspace data may be removed.
         "java.configuration.workspaceCacheLimit": 99,
@@ -239,7 +239,7 @@
         // Include the decompiled sources when finding references.
         "java.references.includeDecompiledSources": true,
         // Enable/disable the references code lens.
-        "java.referencesCodeLens.enabled": true,
+        "java.referencesCodeLens.enabled": false,
         // Enable/disable auto organize imports on save action
         "java.saveActions.organizeImports": false,
         // Enable/disable Smart Selection support for Java. Disabling this option

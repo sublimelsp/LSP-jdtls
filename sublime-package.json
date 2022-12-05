@@ -288,13 +288,15 @@
                       "default": "",
                       "scope": "window"
                     },
+                    // Note: VSCode has here [] as default in its schema.
+                    // However, with [] standalone projects do not work and VSCode does not even send java.project.sourcePaths. (#34)
                     "java.project.sourcePaths": {
-                      "type": "array",
+                      "type": ["array", "null"],
                       "items": {
                         "type": "string"
                       },
                       "markdownDescription": "Relative paths to the workspace where stores the source files. `Only` effective in the `WORKSPACE` scope. The setting will `NOT` affect Maven or Gradle project.",
-                      "default": [],
+                      "default": null,
                       "scope": "window"
                     },
                     "java.contentProvider.preferred": {

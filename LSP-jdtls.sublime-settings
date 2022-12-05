@@ -212,7 +212,7 @@
         // A relative path to the workspace where stores the compiled output.
         "java.project.outputPath": null,
         // Relative paths to the workspace where stores the source files.
-        "java.project.sourcePaths": [],
+        "java.project.sourcePaths": null,
         // Specifies whether to import the Java projects, when opening the folder in
         // Hybrid mode for the first time.
         // possible values: disabled, interactive, automatic

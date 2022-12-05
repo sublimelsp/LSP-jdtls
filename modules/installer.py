@@ -13,14 +13,11 @@ from .constants import STORAGE_DIR
 from .constants import INSTALL_DIR
 from .constants import SETTINGS_FILENAME
 from .constants import JDTLS_VERSION
-from .constants import DEBUG_PLUGIN_VERSION
 from .constants import LOMBOK_VERSION
-from .constants import VSCODE_JAVA_TEST_EXTENSION_VERSION
 from .constants import JDTLS_URL
 from .constants import LOMBOK_URL
-from .constants import DEBUG_PLUGIN_URL
-from .constants import VSCODE_JAVA_TEST_EXTENSION_URL
 from .constants import DATA_DIR
+from .constants import VSCODE_PLUGINS
 
 
 def _jdtls_version() -> str:
@@ -90,11 +87,12 @@ def jdtls_data_path() -> str:
     return os.path.join(storage_subpath(), DATA_DIR)
 
 
-def vscode_java_test_extension_path() -> str:
+def vscode_plugin_path(plugin: dict) -> str:
     return os.path.join(
         install_path(),
-        "vscode-java-test-{version}".format(
-            version=VSCODE_JAVA_TEST_EXTENSION_VERSION
+        "{name}-{version}".format(
+            name=plugin["name"],
+            version=plugin["version"]
         ),
     )
 
@@ -102,16 +100,7 @@ def vscode_java_test_extension_path() -> str:
 def lombok_jar_path() -> str:
     return os.path.join(
         install_path(),
-        "lombok-{version}.jar".format(version=DEBUG_PLUGIN_VERSION),
-    )
-
-
-def debug_plugin_jar_path() -> str:
-    return os.path.join(
-        install_path(),
-        "com.microsoft.java.debug.plugin-{version}.jar".format(
-            version=DEBUG_PLUGIN_VERSION
-        ),
+        "lombok-{version}.jar".format(version=LOMBOK_VERSION),
     )
 
 
@@ -121,8 +110,8 @@ def debug_plugin_jar_path() -> str:
 def needs_update_or_installation() -> bool:
     result = not os.path.isdir(jdtls_path())
     result |= not os.path.isfile(lombok_jar_path())
-    result |= not os.path.isfile(debug_plugin_jar_path())
-    result |= not os.path.isdir(vscode_java_test_extension_path())
+    for plugin in VSCODE_PLUGINS:
+        result |= not os.path.isdir(vscode_plugin_path(plugin))
     return result
 
 
@@ -138,8 +127,7 @@ def install_or_update() -> None:
     extract_tar(JDTLS_URL.format(version=version), jdtls_path())
     sublime.status_message("LSP-jdtls: downloading lombok...")
     download_file(LOMBOK_URL.format(version=LOMBOK_VERSION), lombok_jar_path())
-    sublime.status_message("LSP-jdtls: downloading debug plugin...")
-    download_file(DEBUG_PLUGIN_URL.format(version=DEBUG_PLUGIN_VERSION), debug_plugin_jar_path())
-    sublime.status_message("LSP-jdtls: downloading test extension...")
-    extract_zip(VSCODE_JAVA_TEST_EXTENSION_URL.format(version=VSCODE_JAVA_TEST_EXTENSION_VERSION), vscode_java_test_extension_path())
+    for plugin in VSCODE_PLUGINS:
+        sublime.status_message("LSP-jdtls: {name}...".format(name=plugin["name"]))
+        extract_zip(plugin["url"].format(version=plugin["version"]), vscode_plugin_path(plugin))
     # fmt: on

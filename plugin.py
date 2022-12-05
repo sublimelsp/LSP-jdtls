@@ -31,7 +31,7 @@ from .modules.debug_extension import LspJdtlsRefreshWorkspace, DebuggerJdtlsBrid
 from .modules.quick_input_panel import JdtlsInputCommand  # noqa: E402, F401
 from .modules.utils import get_settings, LspJdtlsTextCommand  # noqa: E402
 
-from .modules.constants import SETTING_JAVA_HOME, SETTING_JAVA_HOME_DEPRECATED, SETTING_LOMBOK_ENABLED, SESSION_NAME  # noqa: E402
+from .modules.constants import SETTING_JAVA_HOME, SETTING_JAVA_HOME_DEPRECATED, SETTING_LOMBOK_ENABLED, SESSION_NAME, VSCODE_PLUGINS  # noqa: E402
 
 from .modules.protocol_extensions_handler import handle_actionable_notification  # noqa: E402
 
@@ -98,7 +98,6 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
             "serverdir": installer.jdtls_path(),
             "datadir": installer.jdtls_data_path(),
             "launcher_version": launcher_version,
-            "debug_plugin_path": installer.debug_plugin_jar_path(),
         }
 
     @classmethod
@@ -122,17 +121,17 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
             configuration.command.remove(javaagent_arg)
 
     @classmethod
-    def _enable_test_extension(cls, configuration: ClientConfig):
-        jarpath = os.path.join(installer.vscode_java_test_extension_path(), "extension/server")
-        with open(os.path.join(installer.vscode_java_test_extension_path(), "extension/package.json"), "r") as package_json:
-            jars = json.load(package_json)["contributes"]["javaExtensions"]
-            bundles = configuration.init_options.get("bundles")
-            for jar in jars:
-                abspath = os.path.join(jarpath, jar[len("./server/"):])
-                if jar.endswith(".jar") and os.path.isfile(abspath):
+    def _insert_bundles(cls, configuration: ClientConfig):
+        bundles = configuration.init_options.get("bundles") or []
+        for plugin in VSCODE_PLUGINS:
+            ext_path = os.path.join(installer.vscode_plugin_path(plugin), "extension")
+            with open(os.path.join(ext_path, "package.json"), "r") as package_json:
+                jars = json.load(package_json).get("contributes", {}).get("javaExtensions", [])
+                for jar in jars:
+                    abspath = os.path.abspath(os.path.normpath(os.path.join(ext_path, jar)))
                     if abspath not in bundles:
-                        bundles += [abspath]
-            configuration.init_options.set("bundles", bundles)
+                        bundles.append(abspath)
+        configuration.init_options.set("bundles", bundles)
 
     @classmethod
     def on_pre_start(
@@ -143,12 +142,9 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         configuration: ClientConfig,
     ) -> Optional[str]:
         cls._enable_lombok(configuration)
-        cls._enable_test_extension(configuration)
-        return None
+        cls._insert_bundles(configuration)
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.reflist = []  # type: List[str]
+        return None
 
     def on_open_uri_async(
         self, uri: DocumentUri, callback: Callable[[str, str, str], None]

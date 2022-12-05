@@ -8,12 +8,12 @@ from LSP.plugin.core.protocol import ExecuteCommandParams
 from LSP.plugin.core.views import KIND_CLASS, KIND_METHOD, offset_to_point, uri_from_view, first_selection_region
 from LSP.plugin.core.typing import List, Tuple, Callable
 
-from .constants import SESSION_NAME
+from .constants import SESSION_NAME, VSCODE_PLUGINS
 from .quick_input_panel import QuickSelect, SelectableItem
 from .text_extension_protocol import IJUnitLaunchArguments, ITestNavigationResult, IJavaTestItem, TestKind, TestLevel
 from .utils import flatten_test_items, sublime_debugger_available, LspJdtlsTextCommand, open_and_focus_uri
-from .installer import vscode_java_test_extension_path
 from .test_extension_server import JunitResultsServer, TestNgResultsServer
+from .installer import vscode_plugin_path
 
 
 class LspJdtlsGenerateTests(LspJdtlsTextCommand):
@@ -210,7 +210,8 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
         elif test_item["testKind"] == TestKind.TestNG:
             server = TestNgResultsServer()
 
-            jarpath = os.path.join(vscode_java_test_extension_path(), "extension/server/com.microsoft.java.test.runner-jar-with-dependencies.jar")
+            test_plugin = [x for x in VSCODE_PLUGINS if x["name"] == "vscode-java-test"][0]
+            jarpath = os.path.join(vscode_plugin_path(test_plugin), "extension/server/com.microsoft.java.test.runner-jar-with-dependencies.jar")
 
             debugger_config["mainClass"] = "com.microsoft.java.test.runner.Launcher"
             debugger_config["classPaths"] += [jarpath]

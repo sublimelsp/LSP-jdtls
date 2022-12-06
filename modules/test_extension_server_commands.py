@@ -210,8 +210,7 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
         elif test_item["testKind"] == TestKind.TestNG:
             server = TestNgResultsServer()
 
-            test_plugin = [x for x in VSCODE_PLUGINS if x["name"] == "vscode-java-test"][0]
-            jarpath = os.path.join(vscode_plugin_path(test_plugin), "extension/server/com.microsoft.java.test.runner-jar-with-dependencies.jar")
+            jarpath = os.path.join(vscode_plugin_path("vscode-java-test"), "extension/server/com.microsoft.java.test.runner-jar-with-dependencies.jar")
 
             debugger_config["mainClass"] = "com.microsoft.java.test.runner.Launcher"
             debugger_config["classPaths"] += [jarpath]

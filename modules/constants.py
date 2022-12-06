@@ -3,18 +3,16 @@ LOMBOK_VERSION = "1.18.24"
 LOMBOK_URL = "https://repo1.maven.org/maven2/org/projectlombok/lombok/{version}/lombok-{version}.jar"
 JDTLS_VERSION = "1.18.0-202212011747"
 JDTLS_URL = "http://download.eclipse.org/jdtls/snapshots/jdt-language-server-{version}.tar.gz"
-VSCODE_PLUGINS = [
-    {
-        "name": "vscode-java-debug",
+VSCODE_PLUGINS = {
+    "vscode-java-debug": {
         "url": "https://github.com/microsoft/vscode-java-debug/releases/download/{version}/vscjava.vscode-java-debug-{version}.vsix",
         "version": "0.47.0"
     },
-    {
-        "name": "vscode-java-test",
+    "vscode-java-test": {
         "url": "https://github.com/microsoft/vscode-java-test/releases/download/{version}/vscjava.vscode-java-test-{version}.vsix",
         "version": "0.37.1"
     }
-]
+}
 DATA_DIR = "data"
 INSTALL_DIR = "server"
 SESSION_NAME = "jdtls"

@@ -87,11 +87,12 @@ def jdtls_data_path() -> str:
     return os.path.join(storage_subpath(), DATA_DIR)
 
 
-def vscode_plugin_path(plugin: dict) -> str:
+def vscode_plugin_path(plugin_name: str) -> str:
+    plugin = VSCODE_PLUGINS[plugin_name]
     return os.path.join(
         install_path(),
         "{name}-{version}".format(
-            name=plugin["name"],
+            name=plugin_name,
             version=plugin["version"]
         ),
     )
@@ -127,7 +128,7 @@ def install_or_update() -> None:
     extract_tar(JDTLS_URL.format(version=version), jdtls_path())
     sublime.status_message("LSP-jdtls: downloading lombok...")
     download_file(LOMBOK_URL.format(version=LOMBOK_VERSION), lombok_jar_path())
-    for plugin in VSCODE_PLUGINS:
-        sublime.status_message("LSP-jdtls: {name}...".format(name=plugin["name"]))
-        extract_zip(plugin["url"].format(version=plugin["version"]), vscode_plugin_path(plugin))
+    for plugin_name, plugin in VSCODE_PLUGINS.items():
+        sublime.status_message("LSP-jdtls: downloading {name}...".format(name=plugin_name))
+        extract_zip(plugin["url"].format(version=plugin["version"]), vscode_plugin_path(plugin_name))
     # fmt: on

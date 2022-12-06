@@ -23,3 +23,19 @@ class FeatureStatus(IntEnum):
     disabled = 0
     interactive = 1
     automatic = 2
+
+
+StatusReport = TypedDict("StatusReport", {
+    "message": str,
+    "type": str
+})
+
+ProgressReport = TypedDict("ProgressReport", {
+    "id": NotRequired[str],
+    "task": str,
+    "subTask": NotRequired[str],
+    "status": str,
+    "workDone": int,
+    "totalWork": int,
+    "complete": bool
+})

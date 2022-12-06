@@ -205,7 +205,8 @@
         "java.maxConcurrentBuilds": 1,
         // [Experimental] Enable/disable progress reports from background processes
         // on the server.
-        "java.progressReports.enabled": true,
+        // This can make the status bar move a lot.
+        "java.progressReports.enabled": false,
         // Enable/disable the server-mode switch information, when Java projects
         // import is skipped on startup.
         "java.project.importHint": true,

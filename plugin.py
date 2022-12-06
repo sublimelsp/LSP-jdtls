@@ -6,7 +6,7 @@ from LSP.plugin import Request
 from LSP.plugin import WorkspaceFolder
 from LSP.plugin.core.sessions import ExecuteCommandParams
 from LSP.plugin.core.types import ClientConfig
-from LSP.plugin.core.typing import Optional, Any, List, Dict, Callable
+from LSP.plugin.core.typing import Optional, List, Dict, Callable
 
 import os
 import sublime
@@ -25,19 +25,21 @@ for m in list(sys.modules.keys()):
     if m.startswith(__package__ + ".") and m != __name__:
         del sys.modules[m]
 
-from .modules.client_command_handler import handle_client_command, handle_client_command_request  # noqa: E402
+from .modules.workspace_execute_command_handler import handle_client_command  # noqa: E402
+from .modules.workspace_execute_client_command_handler import workspace_executeClientCommand  # noqa: E402
 from .modules.test_extension_server_commands import LspJdtlsGenerateTests, LspJdtlsGotoTest, LspJdtlsRunTestAtCursor, LspJdtlsRunTestClass, LspJdtlsRunTest  # noqa: E402, F401
 from .modules.debug_extension import LspJdtlsRefreshWorkspace, DebuggerJdtlsBridgeRequest  # noqa: E402, F401
 from .modules.quick_input_panel import JdtlsInputCommand  # noqa: E402, F401
-from .modules.utils import get_settings, LspJdtlsTextCommand  # noqa: E402
-
-from .modules.constants import SETTING_JAVA_HOME, SETTING_JAVA_HOME_DEPRECATED, SETTING_LOMBOK_ENABLED, SESSION_NAME, VSCODE_PLUGINS  # noqa: E402
-
-from .modules.protocol_extensions_handler import handle_actionable_notification  # noqa: E402
-
+from .modules.utils import add_notification_handler, add_request_handler, get_settings, LspJdtlsTextCommand  # noqa: E402
+from .modules.constants import SETTING_JAVA_HOME, SETTING_JAVA_HOME_DEPRECATED, SETTING_LOMBOK_ENABLED, SESSION_NAME, SETTING_PROGRESS_REPORT_ENABLED, VSCODE_PLUGINS  # noqa: E402
+from .modules.protocol_extensions_handler import language_actionableNotification, language_status, language_progressReport  # noqa: E402
 from .modules import installer  # noqa: E402
 
 
+@add_request_handler("workspace/executeClientCommand", workspace_executeClientCommand)
+@add_notification_handler("language/status", language_status)
+@add_notification_handler("language/progressReport", language_progressReport)
+@add_notification_handler("language/actionableNotification", language_actionableNotification)
 class EclipseJavaDevelopmentTools(AbstractPlugin):
     @classmethod
     def name(cls) -> str:
@@ -147,7 +149,7 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         configuration.init_options.set("workspaceFolders", [x.uri() for x in workspace_folders])
         configuration.init_options.set("settings", configuration.settings.copy())
         configuration.init_options.set("extendedClientCapabilities", {
-            "progressReportProvider": False,
+            "progressReportProvider": configuration.settings.get(SETTING_PROGRESS_REPORT_ENABLED),
             "classFileContentsSupport": False,
             "overrideMethodsPromptSupport": False,
             "hashCodeEqualsPromptSupport": False,
@@ -207,29 +209,6 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         if handle_client_command(session, done, command["command"], command["arguments"] if "arguments" in command else []):
             return True
         return False
-
-    # notification and request handlers
-
-    def m_language_status(self, params: Any) -> None:
-        session = self.weaksession()
-        if not session:
-            return
-        message = params.get("message")
-        if not message:
-            return
-        session.window.status_message(message)
-
-    def m_workspace_executeClientCommand(self, params: Any, request_id) -> None:
-        session = self.weaksession()
-        if not session:
-            return
-        handle_client_command_request(session, request_id, params["command"], params["arguments"])
-
-    def m_language_actionableNotification(self, params: Any) -> None:
-        session = self.weaksession()
-        if not session:
-            return
-        handle_actionable_notification(session, params)
 
 
 class LspJdtlsBuildWorkspace(LspJdtlsTextCommand):

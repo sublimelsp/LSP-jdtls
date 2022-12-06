@@ -25,4 +25,5 @@ SETTING_LOMBOK_ENABLED = "java.jdt.ls.lombokSupport.enabled"
 SETTING_JAVA_HOME = "java.jdt.ls.java.home"
 SETTING_JAVA_HOME_DEPRECATED = "java.home"
 SETTING_ENABLE_NULL_ANALYSIS = "java.compile.nullAnalysis.mode"
+SETTING_PROGRESS_REPORT_ENABLED = "java.progressReports.enabled"
 # fmt: on

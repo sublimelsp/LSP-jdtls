@@ -1,7 +1,7 @@
 import sublime
 
-from LSP.plugin import LspTextCommand, Session, parse_uri
-from LSP.plugin.core.typing import List, Any
+from LSP.plugin import AbstractPlugin, LspTextCommand, Session, parse_uri
+from LSP.plugin.core.typing import List, Any, Callable, Type
 
 from .constants import SESSION_NAME, SETTINGS_FILENAME
 from .text_extension_protocol import IJavaTestItem
@@ -53,6 +53,38 @@ def flatten_test_items(test_items: List[IJavaTestItem]) -> List[IJavaTestItem]:
 
 def filter_lines(string: str, patterns: List[str]):
     return "".join(line for line in string.splitlines(True) if not [p for p in patterns if p in line])
+
+
+def add_notification_handler(notification: str, handler: Callable[[Session, Any], None]):
+    """
+    Adds a handler for a notification.
+    The handler must accept a Session and the notification parameters.
+    """
+    def decorator(cls):
+        def handle(self: AbstractPlugin, params: Any):
+            session = self.weaksession()
+            if not session:
+                return
+            handler(session, params)
+        setattr(cls, "m_" + notification.replace("/", "_"), handle)
+        return cls
+    return decorator
+
+
+def add_request_handler(request: str, handler: Callable[[Session, Any, int], None]):
+    """
+    Adds a handler for a request.
+    The handler must accept a Session, the notification parameters and the request id.
+    """
+    def decorator(cls):
+        def handle(self: AbstractPlugin, params: Any, request_id: int):
+            session = self.weaksession()
+            if not session:
+                return
+            handler(session, params, request_id)
+        setattr(cls, "m_" + request.replace("/", "_"), handle)
+        return cls
+    return decorator
 
 
 class LspJdtlsTextCommand(LspTextCommand):

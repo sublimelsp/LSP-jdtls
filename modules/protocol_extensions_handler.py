@@ -8,11 +8,11 @@ from LSP.plugin.core.sessions import Session
 from LSP.plugin.core.protocol import Command, ExecuteCommandParams
 from LSP.plugin.core.typing import Optional
 
-from .protocol import ActionableNotification
+from .protocol import ActionableNotification, ProgressReport, StatusReport
 from .quick_input_panel import QuickSelect, SelectableItem
 
 
-def handle_actionable_notification(
+def language_actionableNotification(
     session: Session, notification: ActionableNotification
 ):
 
@@ -44,3 +44,20 @@ def handle_actionable_notification(
         QuickSelect(session.window, items, 0, notification["message"]).show().then(lambda x: run_command(x[0].value) if x else None)
 
     run_command(command)
+
+
+def language_progressReport(session: Session, params: ProgressReport):
+    key = params["id"] if "id" in params else "jdtls-status-dummy-key"
+    if not params["complete"]:
+        session.set_window_status_async(key, "{}% {}".format(params["workDone"] / params["totalWork"] * 100, params["task"]))
+    else:
+        session.set_window_status_async(key, "{}% {}".format(params["totalWork"] / params["totalWork"] * 100, params["task"]))
+        sublime.set_timeout_async(lambda: session.erase_window_status_async(key), 1000)
+
+
+
+def language_status(session: Session, params: StatusReport) -> None:
+    message = params.get("message")
+    if not message:
+        return
+    session.window.status_message(message)

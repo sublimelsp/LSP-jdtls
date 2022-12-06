@@ -3,13 +3,14 @@ Handler for JDTLS protocol extensions.
 
 See https://github.com/redhat-developer/vscode-java/blob/master/src/standardLanguageClient.ts
 """
-import sublime
-from LSP.plugin.core.sessions import Session
-from LSP.plugin.core.protocol import Command, ExecuteCommandParams
-from LSP.plugin.core.typing import Optional
-
 from .protocol import ActionableNotification, ProgressReport, StatusReport
 from .quick_input_panel import QuickSelect, SelectableItem
+
+from LSP.plugin.core.protocol import Command, ExecuteCommandParams
+from LSP.plugin.core.sessions import Session
+from LSP.plugin.core.typing import Optional
+
+import sublime
 
 
 def language_actionableNotification(

@@ -1,16 +1,16 @@
 """ Client-side handler for workspace/executeCommand """
 
-import sublime
+from .constants import SETTING_ENABLE_NULL_ANALYSIS
+from .protocol import FeatureStatus
+from .utils import set_lsp_project_setting
 
 from LSP.plugin import Session
 from LSP.plugin.core.edit import apply_workspace_edit
 from LSP.plugin.core.edit import parse_workspace_edit
 from LSP.plugin.core.types import Callable
 from LSP.plugin.core.views import location_to_encoded_filename
-from .utils import set_lsp_project_setting
-from .protocol import FeatureStatus
 
-from .constants import SETTING_ENABLE_NULL_ANALYSIS
+import sublime
 
 
 def handle_client_command(session: Session, done: Callable[[], None], command, arguments):

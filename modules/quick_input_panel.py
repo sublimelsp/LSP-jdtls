@@ -9,11 +9,11 @@ QuickTextInput(...).show().then( do_something_with_text )
 Inspired by https://github.com/daveleroy/sublime_debugger/blob/master/modules/ui/input.py
 """
 
-import sublime
-import sublime_plugin
-
 from LSP.plugin.core.promise import Promise
 from LSP.plugin.core.typing import List, Optional, Dict, Any, Callable, Tuple, Union
+
+import sublime
+import sublime_plugin
 
 
 class SelectableItem:

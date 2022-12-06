@@ -1,39 +1,37 @@
 from LSP.plugin import AbstractPlugin
 from LSP.plugin import register_plugin
+from LSP.plugin import Request
 from LSP.plugin import Session
 from LSP.plugin import unregister_plugin
-from LSP.plugin import Request
 from LSP.plugin import WorkspaceFolder
+from LSP.plugin.core.protocol import DocumentUri
 from LSP.plugin.core.sessions import ExecuteCommandParams
 from LSP.plugin.core.types import ClientConfig
 from LSP.plugin.core.typing import Optional, List, Dict, Callable
+from LSP.plugin.core.views import text_document_identifier
 
+import json
 import os
+import re
+import shutil
 import sublime
 import sublime_plugin
-import re
-import json
 import sys
-import shutil
-
-# TODO: Not part of the public API :(
-from LSP.plugin.core.protocol import DocumentUri
-from LSP.plugin.core.views import text_document_identifier
 
 # Fix reloading for submodules
 for m in list(sys.modules.keys()):
     if m.startswith(__package__ + ".") and m != __name__:
         del sys.modules[m]
 
-from .modules.workspace_execute_command_handler import handle_client_command  # noqa: E402
-from .modules.workspace_execute_client_command_handler import workspace_executeClientCommand  # noqa: E402
-from .modules.test_extension_server_commands import LspJdtlsGenerateTests, LspJdtlsGotoTest, LspJdtlsRunTestAtCursor, LspJdtlsRunTestClass, LspJdtlsRunTest  # noqa: E402, F401
-from .modules.debug_extension import LspJdtlsRefreshWorkspace, DebuggerJdtlsBridgeRequest  # noqa: E402, F401
-from .modules.quick_input_panel import JdtlsInputCommand  # noqa: E402, F401
-from .modules.utils import add_notification_handler, add_request_handler, get_settings, LspJdtlsTextCommand  # noqa: E402
-from .modules.constants import SETTING_JAVA_HOME, SETTING_JAVA_HOME_DEPRECATED, SETTING_LOMBOK_ENABLED, SESSION_NAME, SETTING_PROGRESS_REPORT_ENABLED, VSCODE_PLUGINS  # noqa: E402
-from .modules.protocol_extensions_handler import language_actionableNotification, language_status, language_progressReport  # noqa: E402
 from .modules import installer  # noqa: E402
+from .modules.constants import SETTING_JAVA_HOME, SETTING_JAVA_HOME_DEPRECATED, SETTING_LOMBOK_ENABLED, SESSION_NAME, SETTING_PROGRESS_REPORT_ENABLED, VSCODE_PLUGINS  # noqa: E402
+from .modules.debug_extension import LspJdtlsRefreshWorkspace, DebuggerJdtlsBridgeRequest  # noqa: E402, F401
+from .modules.protocol_extensions_handler import language_actionableNotification, language_status, language_progressReport  # noqa: E402
+from .modules.quick_input_panel import JdtlsInputCommand  # noqa: E402, F401
+from .modules.test_extension_server_commands import LspJdtlsGenerateTests, LspJdtlsGotoTest, LspJdtlsRunTestAtCursor, LspJdtlsRunTestClass, LspJdtlsRunTest  # noqa: E402, F401
+from .modules.utils import add_notification_handler, add_request_handler, get_settings, LspJdtlsTextCommand  # noqa: E402
+from .modules.workspace_execute_client_command_handler import workspace_executeClientCommand  # noqa: E402
+from .modules.workspace_execute_command_handler import handle_client_command  # noqa: E402
 
 
 @add_request_handler("workspace/executeClientCommand", workspace_executeClientCommand)

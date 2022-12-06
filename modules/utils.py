@@ -1,10 +1,10 @@
-import sublime
-
-from LSP.plugin import AbstractPlugin, LspTextCommand, Session, parse_uri
-from LSP.plugin.core.typing import List, Any, Callable, Type
-
 from .constants import SESSION_NAME, SETTINGS_FILENAME
 from .text_extension_protocol import IJavaTestItem
+
+from LSP.plugin import AbstractPlugin, LspTextCommand, Session, parse_uri
+from LSP.plugin.core.typing import List, Any, Callable
+
+import sublime
 
 
 def set_lsp_project_setting(window: sublime.Window, setting: str, value: Any):

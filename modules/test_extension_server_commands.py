@@ -1,19 +1,19 @@
-import sublime
-import json
-import os
+from .constants import SESSION_NAME, VSCODE_PLUGINS
+from .installer import vscode_plugin_path
+from .quick_input_panel import QuickSelect, SelectableItem
+from .test_extension_server import JunitResultsServer, TestNgResultsServer
+from .text_extension_protocol import IJUnitLaunchArguments, ITestNavigationResult, IJavaTestItem, TestKind, TestLevel
+from .utils import flatten_test_items, sublime_debugger_available, LspJdtlsTextCommand, open_and_focus_uri
 
 from LSP.plugin import Session, parse_uri
 from LSP.plugin.core.edit import WorkspaceEdit, parse_workspace_edit
 from LSP.plugin.core.protocol import ExecuteCommandParams
-from LSP.plugin.core.views import KIND_CLASS, KIND_METHOD, offset_to_point, uri_from_view, first_selection_region
 from LSP.plugin.core.typing import List, Tuple, Callable
+from LSP.plugin.core.views import KIND_CLASS, KIND_METHOD, offset_to_point, uri_from_view, first_selection_region
 
-from .constants import SESSION_NAME, VSCODE_PLUGINS
-from .quick_input_panel import QuickSelect, SelectableItem
-from .text_extension_protocol import IJUnitLaunchArguments, ITestNavigationResult, IJavaTestItem, TestKind, TestLevel
-from .utils import flatten_test_items, sublime_debugger_available, LspJdtlsTextCommand, open_and_focus_uri
-from .test_extension_server import JunitResultsServer, TestNgResultsServer
-from .installer import vscode_plugin_path
+import json
+import os
+import sublime
 
 
 class LspJdtlsGenerateTests(LspJdtlsTextCommand):

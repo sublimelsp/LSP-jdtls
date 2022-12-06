@@ -3,10 +3,10 @@
 # See https://github.com/microsoft/vscode-java-test/tree/main/src/commands
 # See https://github.com/redhat-developer/vscode-java/blob/master/src/commands.ts
 
+from .quick_input_panel import QuickSelect, SelectableItem, QuickTextInput
+
 from LSP.plugin import Response, Session
 from LSP.plugin.core.types import Any, Callable, Optional, List
-
-from .quick_input_panel import QuickSelect, SelectableItem, QuickTextInput
 
 
 def workspace_executeClientCommand(session: Session, params, request_id) -> None:

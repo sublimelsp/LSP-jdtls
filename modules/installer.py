@@ -1,23 +1,23 @@
-import os
-import sublime
-import shutil
-import zipfile
-import tarfile
-import tempfile
+from .constants import DATA_DIR
+from .constants import INSTALL_DIR
+from .constants import JDTLS_URL
+from .constants import JDTLS_VERSION
+from .constants import LOMBOK_URL
+from .constants import LOMBOK_VERSION
+from .constants import SETTINGS_FILENAME
+from .constants import STORAGE_DIR
+from .constants import VSCODE_PLUGINS
+
+from LSP.plugin.core.typing import Callable, Union
+from LSP.plugin.core.views import get_storage_path
 from urllib.request import urlopen
 
-from LSP.plugin.core.views import get_storage_path
-from LSP.plugin.core.typing import Callable, Union
-
-from .constants import STORAGE_DIR
-from .constants import INSTALL_DIR
-from .constants import SETTINGS_FILENAME
-from .constants import JDTLS_VERSION
-from .constants import LOMBOK_VERSION
-from .constants import JDTLS_URL
-from .constants import LOMBOK_URL
-from .constants import DATA_DIR
-from .constants import VSCODE_PLUGINS
+import os
+import shutil
+import sublime
+import tarfile
+import tempfile
+import zipfile
 
 
 def _jdtls_version() -> str:

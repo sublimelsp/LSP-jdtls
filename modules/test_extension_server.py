@@ -1,13 +1,13 @@
-import socketserver
-import threading
-import sublime
-import re
-import json
-from datetime import datetime, timedelta
+from .utils import filter_lines, get_settings
 
+from datetime import datetime, timedelta
 from LSP.plugin.core.typing import NotRequired, Optional, List, Dict, Literal, Type, Union, TypedDict, Enum
 
-from .utils import filter_lines, get_settings
+import json
+import re
+import socketserver
+import sublime
+import threading
 
 ICON_SUCCESS = "✔️"
 ICON_FAILED = "❌"

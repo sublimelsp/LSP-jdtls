@@ -15,15 +15,15 @@ VSCODE_PLUGINS = [
         "version": "0.37.1"
     }
 ]
+DATA_DIR = "data"
+INSTALL_DIR = "server"
+SESSION_NAME = "jdtls"
 SETTINGS_FILENAME = "LSP-jdtls.sublime-settings"
 STORAGE_DIR = "LSP-jdtls"
-SESSION_NAME = "jdtls"
-INSTALL_DIR = "server"
-DATA_DIR = "data"
 
-SETTING_LOMBOK_ENABLED = "java.jdt.ls.lombokSupport.enabled"
+SETTING_ENABLE_NULL_ANALYSIS = "java.compile.nullAnalysis.mode"
 SETTING_JAVA_HOME = "java.jdt.ls.java.home"
 SETTING_JAVA_HOME_DEPRECATED = "java.home"
-SETTING_ENABLE_NULL_ANALYSIS = "java.compile.nullAnalysis.mode"
+SETTING_LOMBOK_ENABLED = "java.jdt.ls.lombokSupport.enabled"
 SETTING_PROGRESS_REPORT_ENABLED = "java.progressReports.enabled"
 # fmt: on

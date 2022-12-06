@@ -1,8 +1,8 @@
+from .constants import SESSION_NAME
+from .utils import LspJdtlsTextCommand
+
 from LSP.plugin import Session, Notification, LspWindowCommand, Request
 from LSP.plugin.core.protocol import ExecuteCommandParams
-
-from .utils import LspJdtlsTextCommand
-from .constants import SESSION_NAME
 
 
 class LspJdtlsRefreshWorkspace(LspJdtlsTextCommand):

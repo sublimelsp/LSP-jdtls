@@ -145,7 +145,7 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         cls._insert_bundles(configuration)
 
         configuration.init_options.set("workspaceFolders", [x.uri() for x in workspace_folders])
-        # configuration.init_options.set("settings", configuration.settings)
+        configuration.init_options.set("settings", configuration.settings.copy())
         configuration.init_options.set("extendedClientCapabilities", {
             "progressReportProvider": False,
             "classFileContentsSupport": False,

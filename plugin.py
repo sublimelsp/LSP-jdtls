@@ -7,7 +7,7 @@ from LSP.plugin import WorkspaceFolder
 from LSP.plugin.core.protocol import DocumentUri
 from LSP.plugin.core.sessions import ExecuteCommandParams
 from LSP.plugin.core.types import ClientConfig
-from LSP.plugin.core.typing import Optional, List, Dict, Callable
+from LSP.plugin.core.typing import Optional, List, Dict, Callable, Any
 from LSP.plugin.core.views import text_document_identifier
 
 import json
@@ -24,12 +24,12 @@ for m in list(sys.modules.keys()):
         del sys.modules[m]
 
 from .modules import installer  # noqa: E402
-from .modules.constants import SETTING_JAVA_HOME, SETTING_JAVA_HOME_DEPRECATED, SETTING_LOMBOK_ENABLED, SESSION_NAME, SETTING_PROGRESS_REPORT_ENABLED, VSCODE_PLUGINS  # noqa: E402
+from .modules.constants import JDTLS_CONFIG_TO_SUBLIME_SETTING, SETTING_JAVA_HOME, SETTING_JAVA_HOME_DEPRECATED, SETTING_LOMBOK_ENABLED, SESSION_NAME, SETTING_PROGRESS_REPORT_ENABLED, VSCODE_PLUGINS  # noqa: E402
 from .modules.debug_extension import LspJdtlsRefreshWorkspace, DebuggerJdtlsBridgeRequest  # noqa: E402, F401
 from .modules.protocol_extensions_handler import language_actionableNotification, language_status, language_progressReport  # noqa: E402
 from .modules.quick_input_panel import JdtlsInputCommand  # noqa: E402, F401
 from .modules.test_extension_server_commands import LspJdtlsGenerateTests, LspJdtlsGotoTest, LspJdtlsRunTestAtCursor, LspJdtlsRunTestClass, LspJdtlsRunTest  # noqa: E402, F401
-from .modules.utils import add_notification_handler, add_request_handler, get_settings, LspJdtlsTextCommand  # noqa: E402
+from .modules.utils import add_notification_handler, add_request_handler, get_settings, LspJdtlsTextCommand, view_for_uri_async  # noqa: E402
 from .modules.workspace_execute_client_command_handler import workspace_executeClientCommand  # noqa: E402
 from .modules.workspace_execute_command_handler import handle_client_command  # noqa: E402
 
@@ -207,6 +207,15 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         if handle_client_command(session, done, command["command"], command["arguments"] if "arguments" in command else []):
             return True
         return False
+
+    def on_workspace_configuration(self, params: Dict, configuration: Any) -> Any:
+        if "section" in params and "scopeUri" in params and params["section"] in JDTLS_CONFIG_TO_SUBLIME_SETTING:
+            session = self.weaksession()
+            if session:
+                view = view_for_uri_async(session, params["scopeUri"])
+                if view:
+                    return view.settings().get(JDTLS_CONFIG_TO_SUBLIME_SETTING[params["section"]], None)
+        return configuration
 
 
 class LspJdtlsBuildWorkspace(LspJdtlsTextCommand):

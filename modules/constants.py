@@ -24,4 +24,11 @@ SETTING_JAVA_HOME = "java.jdt.ls.java.home"
 SETTING_JAVA_HOME_DEPRECATED = "java.home"
 SETTING_LOMBOK_ENABLED = "java.jdt.ls.lombokSupport.enabled"
 SETTING_PROGRESS_REPORT_ENABLED = "java.progressReports.enabled"
+
+JDTLS_CONFIG_TO_SUBLIME_SETTING = {
+    "java.format.tabSize": "tab_size",
+    "java.format.insertSpaces": "translate_tabs_to_spaces"
+}
+""" Config dict for workspace/configuration requests. """
+
 # fmt: on

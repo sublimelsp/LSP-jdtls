@@ -2,7 +2,7 @@ from .constants import SESSION_NAME, SETTINGS_FILENAME
 from .text_extension_protocol import IJavaTestItem
 
 from LSP.plugin import AbstractPlugin, LspTextCommand, Session, parse_uri
-from LSP.plugin.core.typing import List, Any, Callable
+from LSP.plugin.core.typing import List, Any, Callable, Optional
 
 import sublime
 
@@ -85,6 +85,16 @@ def add_request_handler(request: str, handler: Callable[[Session, Any, int], Non
         setattr(cls, "m_" + request.replace("/", "_"), handle)
         return cls
     return decorator
+
+
+def view_for_uri_async(session: Session, uri: Optional[str]) -> Optional[sublime.View]:
+    """ Returns a view matching the uri that is attached to the given session.
+    Only safe to use in the async thread.
+    """
+    for view_protocol in session.session_views_async():
+        if view_protocol.get_uri() == uri:
+            return view_protocol.view
+    return None
 
 
 class LspJdtlsTextCommand(LspTextCommand):

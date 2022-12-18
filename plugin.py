@@ -217,6 +217,18 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
                     return view.settings().get(JDTLS_CONFIG_TO_SUBLIME_SETTING[params["section"]], None)
         return configuration
 
+    def on_settings_changed(self, _) -> None:
+        # Workaround for https://github.com/eclipse/eclipse.jdt.ls/issues/2365
+        session = self.weaksession()
+        if session:
+            registration_id = "lsp-jdtls-inlayhint-workaround"
+            capability_path = "inlayHintProvider"
+            registration_path = capability_path + ".id"
+            options = {"resolveProvider": False}
+            session.capabilities.register(registration_id, capability_path, registration_path, options)
+            for sv in session.session_views_async():
+                sv.on_capability_added_async(registration_id, capability_path, options)
+
 
 class LspJdtlsBuildWorkspace(LspJdtlsTextCommand):
 

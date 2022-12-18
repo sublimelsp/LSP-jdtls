@@ -21,6 +21,8 @@ def handle_client_command(session: Session, done: Callable[[], None], command, a
         "java.compile.nullAnalysis.setMode": _set_null_analysis_mode,
         "java.apply.workspaceEdit": _apply_workspace_edit,
         "java.show.references": _show_references,
+        # Workaround for https://github.com/eclipse/eclipse.jdt.ls/issues/2362
+        "java.completion.onDidSelect": lambda _s, d, *_a: d(),
     }
     if command in client_commands:
         client_commands[command](session, done, *arguments)

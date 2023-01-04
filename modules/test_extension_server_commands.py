@@ -1,4 +1,4 @@
-from .constants import SESSION_NAME, VSCODE_PLUGINS
+from .constants import SESSION_NAME
 from .installer import vscode_plugin_path
 from .quick_input_panel import QuickSelect, SelectableItem
 from .test_extension_server import JunitResultsServer, TestNgResultsServer

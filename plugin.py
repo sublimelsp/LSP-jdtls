@@ -25,7 +25,7 @@ for m in list(sys.modules.keys()):
 
 from .modules import installer  # noqa: E402
 from .modules.constants import JDTLS_CONFIG_TO_SUBLIME_SETTING, SETTING_JAVA_HOME, SETTING_JAVA_HOME_DEPRECATED, SETTING_LOMBOK_ENABLED, SESSION_NAME, SETTING_PROGRESS_REPORT_ENABLED, VSCODE_PLUGINS  # noqa: E402
-from .modules.debug_extension import LspJdtlsRefreshWorkspace, DebuggerJdtlsBridgeRequest  # noqa: E402, F401
+from .modules.debug_extension import LspJdtlsRefreshWorkspace  # noqa: E402, F401
 from .modules.protocol_extensions_handler import language_actionableNotification, language_status, language_progressReport  # noqa: E402
 from .modules.quick_input_panel import JdtlsInputCommand  # noqa: E402, F401
 from .modules.test_extension_server_commands import LspJdtlsGenerateTests, LspJdtlsGotoTest, LspJdtlsRunTestAtCursor, LspJdtlsRunTestClass, LspJdtlsRunTest  # noqa: E402, F401

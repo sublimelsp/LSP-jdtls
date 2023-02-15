@@ -98,6 +98,13 @@ def vscode_plugin_path(plugin_name: str) -> str:
     )
 
 
+def vscode_plugin_extension_path(plugin_name: str) -> str:
+    """Path to the folder containing the package.json"""
+    plugin = VSCODE_PLUGINS[plugin_name]
+    subpath = plugin["extension_path"].format(version=plugin["version"])
+    return os.path.normpath(os.path.join(vscode_plugin_path(plugin_name), subpath))
+
+
 def lombok_jar_path() -> str:
     return os.path.join(
         install_path(),

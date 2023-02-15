@@ -6,11 +6,18 @@ JDTLS_URL = "http://download.eclipse.org/jdtls/snapshots/jdt-language-server-{ve
 VSCODE_PLUGINS = {
     "vscode-java-debug": {
         "url": "https://github.com/microsoft/vscode-java-debug/releases/download/{version}/vscjava.vscode-java-debug-{version}.vsix",
-        "version": "0.47.0"
+        "version": "0.47.0",
+        "extension_path": "extension"
     },
     "vscode-java-test": {
         "url": "https://github.com/microsoft/vscode-java-test/releases/download/{version}/vscjava.vscode-java-test-{version}.vsix",
-        "version": "0.37.1"
+        "version": "0.37.1",
+        "extension_path": "extension"
+    },
+    "vscode-java-decompiler": {
+        "url": "https://github.com/dgileadi/vscode-java-decompiler/archive/{version}.zip",
+        "version": "5eaf2fcf73ba6763f1eba69047f631fba80f9a50",
+        "extension_path": "vscode-java-decompiler-{version}"
     }
 }
 DATA_DIR = "data"

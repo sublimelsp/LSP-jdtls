@@ -124,7 +124,7 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
     def _insert_bundles(cls, configuration: ClientConfig):
         bundles = configuration.init_options.get("bundles") or []
         for plugin in VSCODE_PLUGINS:
-            ext_path = os.path.join(installer.vscode_plugin_path(plugin), "extension")
+            ext_path = installer.vscode_plugin_extension_path(plugin)
             with open(os.path.join(ext_path, "package.json"), "r") as package_json:
                 jars = json.load(package_json).get("contributes", {}).get("javaExtensions", [])
                 for jar in jars:

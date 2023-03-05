@@ -1,13 +1,22 @@
-from .utils import filter_lines, get_settings
-
-from datetime import datetime, timedelta
-from LSP.plugin.core.typing import NotRequired, Optional, List, Dict, Literal, Type, Union, TypedDict, Enum
-
 import json
 import re
 import socketserver
-import sublime
 import threading
+from datetime import datetime, timedelta
+
+import sublime
+from LSP.plugin.core.typing import (
+    Enum,
+    List,
+    Literal,
+    NotRequired,
+    Optional,
+    Type,
+    TypedDict,
+    Union,
+)
+
+from .utils import filter_lines, get_settings
 
 ICON_SUCCESS = "✔️"
 ICON_FAILED = "❌"
@@ -404,10 +413,14 @@ class _JunitResultsHandler(_TestResultsHandler):
         ]
 
     def parse(self, container: TestContainer, line: str) -> Optional[str]:
-        header, args = (
+        header, args_str = (
             line[: EclipseTestRunnerMessageIds.MSG_HEADER_LENGTH],
-            line[EclipseTestRunnerMessageIds.MSG_HEADER_LENGTH :].rstrip().split(","),
+            line[EclipseTestRunnerMessageIds.MSG_HEADER_LENGTH :].rstrip()
         )
+
+        # Split at non-escapted , only
+        args = re.split(r"(?<!\\)(?:\\\\)*,", args_str)
+        args = [arg.replace("\\,", ",") for arg in args]
 
         if header == EclipseTestRunnerMessageIds.TEST_TREE:
             container.insert_from_testtree(args)

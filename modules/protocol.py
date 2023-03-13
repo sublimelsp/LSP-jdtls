@@ -5,15 +5,17 @@ https://github.com/redhat-developer/vscode-java/blob/master/src/protocol.ts
 """
 
 from LSP.plugin.core.protocol import Command, IntEnum, MessageType
-from LSP.plugin.core.typing import TypedDict, NotRequired, Any, List
+from LSP.plugin.core.typing import Any, List, NotRequired, TypedDict
 
-
-ActionableNotification = TypedDict("ActionableNotification", {
-    "severity": MessageType,
-    "message": str,
-    "data": NotRequired[Any],
-    "commands": NotRequired[List[Command]],
-})
+ActionableNotification = TypedDict(
+    "ActionableNotification",
+    {
+        "severity": MessageType,
+        "message": str,
+        "data": NotRequired[Any],
+        "commands": NotRequired[List[Command]],
+    },
+)
 """
 Called ActionableMessage in vscode extension.
 """
@@ -25,17 +27,17 @@ class FeatureStatus(IntEnum):
     automatic = 2
 
 
-StatusReport = TypedDict("StatusReport", {
-    "message": str,
-    "type": str
-})
+StatusReport = TypedDict("StatusReport", {"message": str, "type": str})
 
-ProgressReport = TypedDict("ProgressReport", {
-    "id": NotRequired[str],
-    "task": str,
-    "subTask": NotRequired[str],
-    "status": str,
-    "workDone": int,
-    "totalWork": int,
-    "complete": bool
-})
+ProgressReport = TypedDict(
+    "ProgressReport",
+    {
+        "id": NotRequired[str],
+        "task": str,
+        "subTask": NotRequired[str],
+        "status": str,
+        "workDone": int,
+        "totalWork": int,
+        "complete": bool,
+    },
+)

@@ -1,20 +1,25 @@
 from LSP.plugin.core.protocol import Location, Range
-from LSP.plugin.core.typing import IntEnum, TypedDict, List, Optional, NotRequired
+from LSP.plugin.core.typing import IntEnum, List, NotRequired, Optional, TypedDict
+
+ITestNavigationItem = TypedDict(
+    "ITestNavigationItem",
+    {
+        "simpleName": str,
+        "fullyQualifiedName": str,
+        "uri": str,
+        "relevance": int,
+        "outOfBelongingProject": bool,
+    },
+)
 
 
-ITestNavigationItem = TypedDict('ITestNavigationItem', {
-    "simpleName": str,
-    "fullyQualifiedName": str,
-    "uri": str,
-    "relevance": int,
-    "outOfBelongingProject": bool,
-})
-
-
-ITestNavigationResult = TypedDict('ITestNavigationResult', {
-    "items": List[ITestNavigationItem],
-    "location": Location,
-})
+ITestNavigationResult = TypedDict(
+    "ITestNavigationResult",
+    {
+        "items": List[ITestNavigationItem],
+        "location": Location,
+    },
+)
 
 
 class TestKind(IntEnum):
@@ -35,31 +40,37 @@ class TestLevel(IntEnum):
     Invocation = 7
 
 
-IJavaTestItem = TypedDict('IJavaTestItem', {
-    "children": NotRequired[List["IJavaTestItem"]],
-    "uri": Optional[str],
-    "range": Optional[Range],
-    "jdtHandler": str,
-    "fullName": str,
-    "label": str,
-    "id": str,
-    "projectName": str,
-    "testKind": TestKind,
-    "testLevel": TestLevel,
-    "uniqueId": NotRequired[str],
-    # Identifies a single invocation of a parameterized test.
-    # Invocations for which a re-run is possible store their own uniqueId which is provided as part of the result.
-    # Methods may store it in order to specify a certain parameter-set to be used when running again.
-    "natureIds": NotRequired[List[str]],
-    # Optional fields for projects
-})
+IJavaTestItem = TypedDict(
+    "IJavaTestItem",
+    {
+        "children": NotRequired[List["IJavaTestItem"]],
+        "uri": Optional[str],
+        "range": Optional[Range],
+        "jdtHandler": str,
+        "fullName": str,
+        "label": str,
+        "id": str,
+        "projectName": str,
+        "testKind": TestKind,
+        "testLevel": TestLevel,
+        "uniqueId": NotRequired[str],
+        # Identifies a single invocation of a parameterized test.
+        # Invocations for which a re-run is possible store their own uniqueId which is provided as part of the result.
+        # Methods may store it in order to specify a certain parameter-set to be used when running again.
+        "natureIds": NotRequired[List[str]],
+        # Optional fields for projects
+    },
+)
 
-IJUnitLaunchArguments = TypedDict('IJUnitLaunchArguments', {
-    "workingDirectory": str,
-    "mainClass": str,
-    "projectName": str,
-    "classpath": List[str],
-    "modulepath": List[str],
-    "vmArguments": List[str],
-    "programArguments": List[str],
-})
+IJUnitLaunchArguments = TypedDict(
+    "IJUnitLaunchArguments",
+    {
+        "workingDirectory": str,
+        "mainClass": str,
+        "projectName": str,
+        "classpath": List[str],
+        "modulepath": List[str],
+        "vmArguments": List[str],
+        "programArguments": List[str],
+    },
+)

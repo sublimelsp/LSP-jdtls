@@ -1,19 +1,36 @@
+import json
+import os
+
+import sublime
+from LSP.plugin import Session, parse_uri
+from LSP.plugin.core.edit import WorkspaceEdit, parse_workspace_edit
+from LSP.plugin.core.protocol import ExecuteCommandParams  # noqa: F401
+from LSP.plugin.core.typing import Callable, List, Tuple
+from LSP.plugin.core.views import (
+    KIND_CLASS,
+    KIND_METHOD,
+    first_selection_region,
+    offset_to_point,
+    uri_from_view,
+)
+
 from .constants import SESSION_NAME
 from .installer import vscode_plugin_path
 from .quick_input_panel import QuickSelect, SelectableItem
 from .test_extension_server import JunitResultsServer, TestNgResultsServer
-from .text_extension_protocol import IJUnitLaunchArguments, ITestNavigationResult, IJavaTestItem, TestKind, TestLevel
-from .utils import flatten_test_items, sublime_debugger_available, LspJdtlsTextCommand, open_and_focus_uri
-
-from LSP.plugin import Session, parse_uri
-from LSP.plugin.core.edit import WorkspaceEdit, parse_workspace_edit
-from LSP.plugin.core.protocol import ExecuteCommandParams
-from LSP.plugin.core.typing import List, Tuple, Callable
-from LSP.plugin.core.views import KIND_CLASS, KIND_METHOD, offset_to_point, uri_from_view, first_selection_region
-
-import json
-import os
-import sublime
+from .text_extension_protocol import (
+    IJavaTestItem,
+    IJUnitLaunchArguments,
+    ITestNavigationResult,
+    TestKind,
+    TestLevel,
+)
+from .utils import (
+    LspJdtlsTextCommand,
+    flatten_test_items,
+    open_and_focus_uri,
+    sublime_debugger_available,
+)
 
 
 class LspJdtlsGenerateTests(LspJdtlsTextCommand):
@@ -116,7 +133,9 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
 
     def run_jdtls_command(self, edit, session: Session):
         if not sublime_debugger_available():
-            sublime.error_message("Sublime Debugger must be installed and activated to use this command!")
+            sublime.error_message(
+                "Sublime Debugger must be installed and activated to use this command!"
+            )
             raise ValueError()
 
         command = {
@@ -129,7 +148,9 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
             else self.select_test_item(result, self.fetch_debug_args)
         )
 
-    def select_test_item(self, test_items: List[IJavaTestItem], then: Callable[[IJavaTestItem], None]) -> None:
+    def select_test_item(
+        self, test_items: List[IJavaTestItem], then: Callable[[IJavaTestItem], None]
+    ) -> None:
         ...
 
     def fetch_debug_args(self, test_item: IJavaTestItem):
@@ -137,13 +158,17 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
         if not session:
             return
         command = {
-            "command": 'vscode.java.test.junit.argument',
-            "arguments": [json.dumps({
-                "projectName": test_item["projectName"],
-                "testLevel": test_item["testLevel"],
-                "testKind": test_item["testKind"],
-                "testNames": [self.get_test_name(test_item)],
-            })],
+            "command": "vscode.java.test.junit.argument",
+            "arguments": [
+                json.dumps(
+                    {
+                        "projectName": test_item["projectName"],
+                        "testLevel": test_item["testLevel"],
+                        "testKind": test_item["testKind"],
+                        "testNames": [self.get_test_name(test_item)],
+                    }
+                )
+            ],
         }  # type: ExecuteCommandParams
         session.execute_command(command, False).then(
             lambda result: print("Error fetching debug arguments: " + str(result))
@@ -159,19 +184,21 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
         else:
             return test_item["jdtHandler"]
 
-    def resolve_debug_classpath(self, test_item: IJavaTestItem, launch_args: IJUnitLaunchArguments):
+    def resolve_debug_classpath(
+        self, test_item: IJavaTestItem, launch_args: IJUnitLaunchArguments
+    ):
         session = self.session_by_name(SESSION_NAME)
         if not session:
             return
         command = {
-            "command": 'java.project.getClasspaths',
-            "arguments": [uri_from_view(self.view), json.dumps({
-                "scope": "test"
-            })],
+            "command": "java.project.getClasspaths",
+            "arguments": [uri_from_view(self.view), json.dumps({"scope": "test"})],
         }  # type: ExecuteCommandParams
 
         def merge_classpaths(classpath: List[str]):
-            launch_args["classpath"].extend(x for x in classpath if x not in launch_args["classpath"])
+            launch_args["classpath"].extend(
+                x for x in classpath if x not in launch_args["classpath"]
+            )
             self.launch(test_item, launch_args)
 
         session.execute_command(command, False).then(
@@ -187,8 +214,8 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
 
         debugger_config = {
             "name": test_item["label"],
-            "type": 'java',
-            "request": 'launch',
+            "type": "java",
+            "request": "launch",
             "projectName": launch_args["projectName"],
             "cwd": launch_args["workingDirectory"],
             "classPaths": launch_args["classpath"],
@@ -197,7 +224,10 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
             "noDebug": False,
         }
 
-        if test_item["testKind"] == TestKind.JUnit5 or test_item["testKind"] == TestKind.JUnit:
+        if (
+            test_item["testKind"] == TestKind.JUnit5
+            or test_item["testKind"] == TestKind.JUnit
+        ):
             server = JunitResultsServer()
 
             # The port in launch_args is a placeholder. (See vscode-java-test)
@@ -210,21 +240,31 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
         elif test_item["testKind"] == TestKind.TestNG:
             server = TestNgResultsServer()
 
-            jarpath = os.path.join(vscode_plugin_path("vscode-java-test"), "extension/server/com.microsoft.java.test.runner-jar-with-dependencies.jar")
+            jarpath = os.path.join(
+                vscode_plugin_path("vscode-java-test"),
+                "extension/server/com.microsoft.java.test.runner-jar-with-dependencies.jar",
+            )
 
             debugger_config["mainClass"] = "com.microsoft.java.test.runner.Launcher"
             debugger_config["classPaths"] += [jarpath]
             debugger_config["args"] = " ".join(self.get_test_ng_args(test_item, server))
 
         else:
-            raise ValueError("TestKind " + str(test_item["testKind"]) + " not supported")
+            raise ValueError(
+                "TestKind " + str(test_item["testKind"]) + " not supported"
+            )
 
         server.receive_test_results_async()
         window = self.view.window()
         if window:
-            window.run_command("debugger", {"action": "open_and_start", "configuration": debugger_config})
+            window.run_command(
+                "debugger",
+                {"action": "open_and_start", "configuration": debugger_config},
+            )
 
-    def get_test_ng_args(self, test_item: IJavaTestItem, server: TestNgResultsServer) -> List[str]:
+    def get_test_ng_args(
+        self, test_item: IJavaTestItem, server: TestNgResultsServer
+    ) -> List[str]:
         args = [str(server.get_port()), "testng"]
 
         flattened = flatten_test_items([test_item])
@@ -242,7 +282,9 @@ class LspJdtlsRunTestClass(LspJdtlsTestCommand):
     Debug the test class in the current view.
     """
 
-    def select_test_item(self, test_items: List[IJavaTestItem], then: Callable[[IJavaTestItem], None]) -> None:
+    def select_test_item(
+        self, test_items: List[IJavaTestItem], then: Callable[[IJavaTestItem], None]
+    ) -> None:
         for item in test_items:
             if item["testLevel"] == TestLevel.Class:
                 then(item)
@@ -256,7 +298,9 @@ class LspJdtlsRunTestAtCursor(LspJdtlsTestCommand):
     Debug the nearest test method in the current view.
     """
 
-    def select_test_item(self, test_items: List[IJavaTestItem], then: Callable[[IJavaTestItem], None]) -> None:
+    def select_test_item(
+        self, test_items: List[IJavaTestItem], then: Callable[[IJavaTestItem], None]
+    ) -> None:
         if not test_items:
             return
         item = None
@@ -269,7 +313,11 @@ class LspJdtlsRunTestAtCursor(LspJdtlsTestCommand):
         for test in flattened:
             if test["testLevel"] == TestLevel.Method:
                 if test["range"] and test["range"]["start"]["line"] <= cursor_line:
-                    if item is None or test["range"]["start"]["line"] > item["range"]["start"]["line"]:  # item["range"] cannot be None
+                    if (
+                        item is None
+                        or test["range"]["start"]["line"]
+                        > item["range"]["start"]["line"]
+                    ):  # item["range"] cannot be None
                         item = test
 
         if item:
@@ -281,7 +329,9 @@ class LspJdtlsRunTest(LspJdtlsTestCommand):
     Debug the a test method from current view.
     """
 
-    def select_test_item(self, test_items: List[IJavaTestItem], then: Callable[[IJavaTestItem], None]) -> None:
+    def select_test_item(
+        self, test_items: List[IJavaTestItem], then: Callable[[IJavaTestItem], None]
+    ) -> None:
         def kind_from_test_level(test_level: TestLevel) -> Tuple[int, str, str]:
             if test_level == TestLevel.Class:
                 return KIND_CLASS
@@ -291,5 +341,15 @@ class LspJdtlsRunTest(LspJdtlsTestCommand):
                 return sublime.KIND_AMBIGUOUS
 
         tests = flatten_test_items(test_items)
-        items = [SelectableItem(lens["fullName"], i, lens["label"], kind=kind_from_test_level(lens["testLevel"])) for i, lens in enumerate(tests)]
-        QuickSelect(None, items).show().then(lambda x: then(tests[x[0].value]) if x else None)
+        items = [
+            SelectableItem(
+                lens["fullName"],
+                i,
+                lens["label"],
+                kind=kind_from_test_level(lens["testLevel"]),
+            )
+            for i, lens in enumerate(tests)
+        ]
+        QuickSelect(None, items).show().then(
+            lambda x: then(tests[x[0].value]) if x else None
+        )

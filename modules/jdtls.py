@@ -1,43 +1,54 @@
-from LSP.plugin import AbstractPlugin
-from LSP.plugin import register_plugin
-from LSP.plugin import Request
-from LSP.plugin import Session
-from LSP.plugin import unregister_plugin
-from LSP.plugin import WorkspaceFolder
-from LSP.plugin.core.protocol import DocumentUri
-from LSP.plugin.core.sessions import ExecuteCommandParams
-from LSP.plugin.core.types import ClientConfig
-from LSP.plugin.core.typing import Optional, List, Dict, Callable, Any
-from LSP.plugin.core.views import text_document_identifier
-
 import json
 import os
 import re
-import shutil
+
 import sublime
-import sublime_plugin
-import sys
+from LSP.plugin import (
+    AbstractPlugin,
+    Request,
+    WorkspaceFolder,
+    register_plugin,
+    unregister_plugin,
+)
+from LSP.plugin.core.protocol import DocumentUri
+from LSP.plugin.core.sessions import ExecuteCommandParams
+from LSP.plugin.core.types import ClientConfig
+from LSP.plugin.core.typing import Any, Callable, Dict, List, Optional
+from LSP.plugin.core.views import text_document_identifier
 
-# Fix reloading for submodules
-for m in list(sys.modules.keys()):
-    if m.startswith(__package__ + ".") and m != __name__:
-        del sys.modules[m]
-
-from .modules import installer  # noqa: E402
-from .modules.constants import JDTLS_CONFIG_TO_SUBLIME_SETTING, SETTING_JAVA_HOME, SETTING_JAVA_HOME_DEPRECATED, SETTING_LOMBOK_ENABLED, SESSION_NAME, SETTING_PROGRESS_REPORT_ENABLED, VSCODE_PLUGINS  # noqa: E402
-from .modules.debug_extension import LspJdtlsRefreshWorkspace  # noqa: E402, F401
-from .modules.protocol_extensions_handler import language_actionableNotification, language_status, language_progressReport  # noqa: E402
-from .modules.quick_input_panel import JdtlsInputCommand  # noqa: E402, F401
-from .modules.test_extension_server_commands import LspJdtlsGenerateTests, LspJdtlsGotoTest, LspJdtlsRunTestAtCursor, LspJdtlsRunTestClass, LspJdtlsRunTest  # noqa: E402, F401
-from .modules.utils import add_notification_handler, add_request_handler, get_settings, LspJdtlsTextCommand, view_for_uri_async  # noqa: E402
-from .modules.workspace_execute_client_command_handler import workspace_executeClientCommand  # noqa: E402
-from .modules.workspace_execute_command_handler import handle_client_command  # noqa: E402
+from . import installer
+from .constants import (
+    JDTLS_CONFIG_TO_SUBLIME_SETTING,
+    SESSION_NAME,
+    SETTING_JAVA_HOME,
+    SETTING_JAVA_HOME_DEPRECATED,
+    SETTING_LOMBOK_ENABLED,
+    SETTING_PROGRESS_REPORT_ENABLED,
+    VSCODE_PLUGINS,
+)
+from .protocol_extensions_handler import (
+    language_actionableNotification,
+    language_progressReport,
+    language_status,
+)
+from .utils import (
+    add_notification_handler,
+    add_request_handler,
+    get_settings,
+    view_for_uri_async,
+)
+from .workspace_execute_client_command_handler import (
+    workspace_executeClientCommand,
+)
+from .workspace_execute_command_handler import handle_client_command
 
 
 @add_request_handler("workspace/executeClientCommand", workspace_executeClientCommand)
 @add_notification_handler("language/status", language_status)
 @add_notification_handler("language/progressReport", language_progressReport)
-@add_notification_handler("language/actionableNotification", language_actionableNotification)
+@add_notification_handler(
+    "language/actionableNotification", language_actionableNotification
+)
 class EclipseJavaDevelopmentTools(AbstractPlugin):
     @classmethod
     def name(cls) -> str:
@@ -126,9 +137,15 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         for plugin in VSCODE_PLUGINS:
             ext_path = installer.vscode_plugin_extension_path(plugin)
             with open(os.path.join(ext_path, "package.json"), "r") as package_json:
-                jars = json.load(package_json).get("contributes", {}).get("javaExtensions", [])
+                jars = (
+                    json.load(package_json)
+                    .get("contributes", {})
+                    .get("javaExtensions", [])
+                )
                 for jar in jars:
-                    abspath = os.path.abspath(os.path.normpath(os.path.join(ext_path, jar)))
+                    abspath = os.path.abspath(
+                        os.path.normpath(os.path.join(ext_path, jar))
+                    )
                     if abspath not in bundles:
                         bundles.append(abspath)
         configuration.init_options.set("bundles", bundles)
@@ -144,30 +161,37 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         cls._enable_lombok(configuration)
         cls._insert_bundles(configuration)
 
-        configuration.init_options.set("workspaceFolders", [x.uri() for x in workspace_folders])
+        configuration.init_options.set(
+            "workspaceFolders", [x.uri() for x in workspace_folders]
+        )
         configuration.init_options.set("settings", configuration.settings.copy())
-        configuration.init_options.set("extendedClientCapabilities", {
-            "progressReportProvider": configuration.settings.get(SETTING_PROGRESS_REPORT_ENABLED),
-            "classFileContentsSupport": False,
-            "overrideMethodsPromptSupport": False,
-            "hashCodeEqualsPromptSupport": False,
-            "advancedOrganizeImportsSupport": False,
-            "generateToStringPromptSupport": False,
-            "advancedGenerateAccessorsSupport": False,
-            "generateConstructorsPromptSupport": False,
-            "generateDelegateMethodsPromptSupport": False,
-            "advancedExtractRefactoringSupport": False,
-            "inferSelectionSupport": [],
-            "moveRefactoringSupport": False,
-            "clientHoverProvider": False,
-            "clientDocumentSymbolProvider": False,
-            "gradleChecksumWrapperPromptSupport": False,
-            "resolveAdditionalTextEditsSupport": False,
-            "advancedIntroduceParameterRefactoringSupport": False,
-            "actionableRuntimeNotificationSupport": True,
-            "shouldLanguageServerExitOnShutdown": True,
-            "onCompletionItemSelectedCommand": "editor.action.triggerParameterHints"
-        })
+        configuration.init_options.set(
+            "extendedClientCapabilities",
+            {
+                "progressReportProvider": configuration.settings.get(
+                    SETTING_PROGRESS_REPORT_ENABLED
+                ),
+                "classFileContentsSupport": False,
+                "overrideMethodsPromptSupport": False,
+                "hashCodeEqualsPromptSupport": False,
+                "advancedOrganizeImportsSupport": False,
+                "generateToStringPromptSupport": False,
+                "advancedGenerateAccessorsSupport": False,
+                "generateConstructorsPromptSupport": False,
+                "generateDelegateMethodsPromptSupport": False,
+                "advancedExtractRefactoringSupport": False,
+                "inferSelectionSupport": [],
+                "moveRefactoringSupport": False,
+                "clientHoverProvider": False,
+                "clientDocumentSymbolProvider": False,
+                "gradleChecksumWrapperPromptSupport": False,
+                "resolveAdditionalTextEditsSupport": False,
+                "advancedIntroduceParameterRefactoringSupport": False,
+                "actionableRuntimeNotificationSupport": True,
+                "shouldLanguageServerExitOnShutdown": True,
+                "onCompletionItemSelectedCommand": "editor.action.triggerParameterHints",
+            },
+        )
 
         # configuration.init_options.set("triggerFiles", configuration.settings)
 
@@ -204,17 +228,28 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         session = self.weaksession()
         if not session:
             return False
-        if handle_client_command(session, done, command["command"], command["arguments"] if "arguments" in command else []):
+        if handle_client_command(
+            session,
+            done,
+            command["command"],
+            command["arguments"] if "arguments" in command else [],
+        ):
             return True
         return False
 
     def on_workspace_configuration(self, params: Dict, configuration: Any) -> Any:
-        if "section" in params and "scopeUri" in params and params["section"] in JDTLS_CONFIG_TO_SUBLIME_SETTING:
+        if (
+            "section" in params
+            and "scopeUri" in params
+            and params["section"] in JDTLS_CONFIG_TO_SUBLIME_SETTING
+        ):
             session = self.weaksession()
             if session:
                 view = view_for_uri_async(session, params["scopeUri"])
                 if view:
-                    return view.settings().get(JDTLS_CONFIG_TO_SUBLIME_SETTING[params["section"]], None)
+                    return view.settings().get(
+                        JDTLS_CONFIG_TO_SUBLIME_SETTING[params["section"]], None
+                    )
         return configuration
 
     def on_settings_changed(self, _) -> None:
@@ -225,44 +260,11 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
             capability_path = "inlayHintProvider"
             registration_path = capability_path + ".id"
             options = {"resolveProvider": False}
-            session.capabilities.register(registration_id, capability_path, registration_path, options)
+            session.capabilities.register(
+                registration_id, capability_path, registration_path, options
+            )
             for sv in session.session_views_async():
                 sv.on_capability_added_async(registration_id, capability_path, options)
-
-
-class LspJdtlsBuildWorkspace(LspJdtlsTextCommand):
-
-    def run_jdtls_command(self, edit, session: Session):
-        params = True
-        session.send_request(
-            Request("java/buildWorkspace", params),
-            self.on_response_async,
-            self.on_error_async,
-        )
-
-    def on_response_async(self, response):
-        window = self.view.window()
-        if window is None:
-            return
-        if response == 0:
-            window.status_message("LSP-jdtls: Build failed")
-        elif response == 1:
-            window.status_message("LSP-jdtls: Build succeeded")
-        elif response == 2:
-            window.status_message("LSP-jdtls: Build ended with error")
-        elif response == 3:
-            window.status_message("LSP-jdtls: Build cancelled")
-
-    def on_error_async(self, error):
-        pass
-
-
-class JdtlsClearData(sublime_plugin.TextCommand):
-    def run(self, edit) -> None:
-        if sublime.ok_cancel_dialog("Are you sure you want to clear " + installer.jdtls_data_path()):
-            if os.path.exists(installer.jdtls_data_path()):
-                shutil.rmtree(installer.jdtls_data_path())
-                self.view.run_command("lsp_restart_server", {"config_name": SESSION_NAME})
 
 
 def plugin_loaded() -> None:

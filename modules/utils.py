@@ -1,15 +1,16 @@
+import sublime
+from LSP.plugin import AbstractPlugin, LspTextCommand, Session, parse_uri
+from LSP.plugin.core.typing import Any, Callable, List, Optional
+
 from .constants import SESSION_NAME, SETTINGS_FILENAME
 from .text_extension_protocol import IJavaTestItem
-
-from LSP.plugin import AbstractPlugin, LspTextCommand, Session, parse_uri
-from LSP.plugin.core.typing import List, Any, Callable, Optional
-
-import sublime
 
 
 def set_lsp_project_setting(window: sublime.Window, setting: str, value: Any):
     if not window.project_file_name():
-        sublime.message_dialog("A sublime-project is required to save project settings.")
+        sublime.message_dialog(
+            "A sublime-project is required to save project settings."
+        )
         window.run_command("save_project_and_workspace_as")
 
     project_data = window.project_data() or {}
@@ -52,22 +53,31 @@ def flatten_test_items(test_items: List[IJavaTestItem]) -> List[IJavaTestItem]:
 
 
 def filter_lines(string: str, patterns: List[str]):
-    return "".join(line for line in string.splitlines(True) if not [p for p in patterns if p in line])
+    return "".join(
+        line
+        for line in string.splitlines(True)
+        if not [p for p in patterns if p in line]
+    )
 
 
-def add_notification_handler(notification: str, handler: Callable[[Session, Any], None]):
+def add_notification_handler(
+    notification: str, handler: Callable[[Session, Any], None]
+):
     """
     Adds a handler for a notification.
     The handler must accept a Session and the notification parameters.
     """
+
     def decorator(cls):
         def handle(self: AbstractPlugin, params: Any):
             session = self.weaksession()
             if not session:
                 return
             handler(session, params)
+
         setattr(cls, "m_" + notification.replace("/", "_"), handle)
         return cls
+
     return decorator
 
 
@@ -76,19 +86,22 @@ def add_request_handler(request: str, handler: Callable[[Session, Any, int], Non
     Adds a handler for a request.
     The handler must accept a Session, the notification parameters and the request id.
     """
+
     def decorator(cls):
         def handle(self: AbstractPlugin, params: Any, request_id: int):
             session = self.weaksession()
             if not session:
                 return
             handler(session, params, request_id)
+
         setattr(cls, "m_" + request.replace("/", "_"), handle)
         return cls
+
     return decorator
 
 
 def view_for_uri_async(session: Session, uri: Optional[str]) -> Optional[sublime.View]:
-    """ Returns a view matching the uri that is attached to the given session.
+    """Returns a view matching the uri that is attached to the given session.
     Only safe to use in the async thread.
     """
     for view_protocol in session.session_views_async():
@@ -98,7 +111,6 @@ def view_for_uri_async(session: Session, uri: Optional[str]) -> Optional[sublime
 
 
 class LspJdtlsTextCommand(LspTextCommand):
-
     session_name = SESSION_NAME
 
     def run(self, edit, **args):

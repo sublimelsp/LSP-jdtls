@@ -143,18 +143,21 @@ class TestNgTestMessageName(Enum):
     TEST_FAILED = "testFailed"
 
 
-TestNgTestMessageAttributes = TypedDict("TestNgTestMessageAttributes", {
-    "name": str,
-    "message": NotRequired[str],
-    "trace": NotRequired[str],
-    "duration": NotRequired[str]
-})
+TestNgTestMessageAttributes = TypedDict(
+    "TestNgTestMessageAttributes",
+    {
+        "name": str,
+        "message": NotRequired[str],
+        "trace": NotRequired[str],
+        "duration": NotRequired[str],
+    },
+)
 
 
-TestNgTestMessageItem = TypedDict("TestNgTestMessageItem", {
-    "name": TestNgTestMessageName,
-    "attributes": TestNgTestMessageAttributes
-})
+TestNgTestMessageItem = TypedDict(
+    "TestNgTestMessageItem",
+    {"name": TestNgTestMessageName, "attributes": TestNgTestMessageAttributes},
+)
 
 
 class Test:
@@ -174,9 +177,13 @@ class Test:
         self.name = name
         # removeprefix is not available in python 3.3
         if self.name.startswith(EclipseTestRunnerMessageIds.IGNORED_TEST_PREFIX):
-            self.name = self.name[EclipseTestRunnerMessageIds.IGNORED_TEST_PREFIX:]
-        if self.name.startswith(EclipseTestRunnerMessageIds.ASSUMPTION_FAILED_TEST_PREFIX):
-            self.name = self.name[EclipseTestRunnerMessageIds.ASSUMPTION_FAILED_TEST_PREFIX:]
+            self.name = self.name[EclipseTestRunnerMessageIds.IGNORED_TEST_PREFIX :]
+        if self.name.startswith(
+            EclipseTestRunnerMessageIds.ASSUMPTION_FAILED_TEST_PREFIX
+        ):
+            self.name = self.name[
+                EclipseTestRunnerMessageIds.ASSUMPTION_FAILED_TEST_PREFIX :
+            ]
         self.count = count
         self.parent = parent
         self.display_name = display_name
@@ -265,7 +272,7 @@ class Test:
             padding="    " * level,
             name=self.display_name or self.name,
             icon=ICON_FAILED if self.is_failed() else ICON_SUCCESS,
-            type="({})".format(", ".join(additional_info)) if additional_info else ""
+            type="({})".format(", ".join(additional_info)) if additional_info else "",
         )
 
         inner_padding = "    " * (level + 1)
@@ -277,12 +284,21 @@ class Test:
         if self._failed:
             if self._message:
                 result += "\n"
-                result += inner_padding + "> message: " + pad(self._message).strip() + "\n"
+                result += (
+                    inner_padding + "> message: " + pad(self._message).strip() + "\n"
+                )
 
             if self._expected and self._actual:
                 result += "\n"
-                result += inner_padding + "> expected: " + pad(self._expected).strip() + "<br>\n"
-                result += inner_padding + "> but was: " + pad(self._actual).strip() + "\n"
+                result += (
+                    inner_padding
+                    + "> expected: "
+                    + pad(self._expected).strip()
+                    + "<br>\n"
+                )
+                result += (
+                    inner_padding + "> but was: " + pad(self._actual).strip() + "\n"
+                )
 
             if self._trace:
                 result += "\n"
@@ -338,7 +354,6 @@ class TestContainer:
 
 
 class _TestResultsHandler(socketserver.StreamRequestHandler):
-
     def prepare(self):
         ...
 
@@ -382,40 +397,47 @@ class _TestResultsHandler(socketserver.StreamRequestHandler):
 _{ts}_
 
 {items}
-""".format(ts=timestamp.strftime("%Y-%m-%d %H:%M:%S"), items=container.to_markdown(0))
+""".format(
+            ts=timestamp.strftime("%Y-%m-%d %H:%M:%S"), items=container.to_markdown(0)
+        )
 
-        results += "\n_took: {} s_\n".format((datetime.now() - timestamp).total_seconds())
+        results += "\n_took: {} s_\n".format(
+            (datetime.now() - timestamp).total_seconds()
+        )
         view.run_command("select_all")
         view.run_command("right_delete")
         view.run_command("append", {"characters": results})
 
 
 class _JunitResultsHandler(_TestResultsHandler):
-
     def prepare(self):
         self.current_test = None  # type: Optional[Test]
         # Used to consume traces, actual, expected
         self.line_consumer = None
-        self.stack_trace_filter = [] if not enable_stack_trace_filter() else [
-            "org.eclipse.jdt.internal.junit.runner.",
-            "org.eclipse.jdt.internal.junit4.runner.",
-            "org.eclipse.jdt.internal.junit5.runner.",
-            "org.eclipse.jdt.internal.junit.ui.",
-            "junit.framework.TestCase",
-            "junit.framework.TestResult",
-            "junit.framework.TestResult$1",
-            "junit.framework.TestSuite",
-            "junit.framework.Assert",
-            "org.junit.",
-            "java.lang.reflect.Method.invoke",
-            "sun.reflect.",
-            "jdk.internal.reflect.",
-        ]
+        self.stack_trace_filter = (
+            []
+            if not enable_stack_trace_filter()
+            else [
+                "org.eclipse.jdt.internal.junit.runner.",
+                "org.eclipse.jdt.internal.junit4.runner.",
+                "org.eclipse.jdt.internal.junit5.runner.",
+                "org.eclipse.jdt.internal.junit.ui.",
+                "junit.framework.TestCase",
+                "junit.framework.TestResult",
+                "junit.framework.TestResult$1",
+                "junit.framework.TestSuite",
+                "junit.framework.Assert",
+                "org.junit.",
+                "java.lang.reflect.Method.invoke",
+                "sun.reflect.",
+                "jdk.internal.reflect.",
+            ]
+        )
 
     def parse(self, container: TestContainer, line: str) -> Optional[str]:
         header, args_str = (
             line[: EclipseTestRunnerMessageIds.MSG_HEADER_LENGTH],
-            line[EclipseTestRunnerMessageIds.MSG_HEADER_LENGTH :].rstrip()
+            line[EclipseTestRunnerMessageIds.MSG_HEADER_LENGTH :].rstrip(),
         )
 
         # Split at non-escapted , only
@@ -428,7 +450,11 @@ class _JunitResultsHandler(_TestResultsHandler):
             self.current_test = container.get_by_id(int(args[0]))
             if self.current_test:
                 self.current_test.set_started()
-                return "Running " + str(self.current_test.display_name or self.current_test.name) + "\n"
+                return (
+                    "Running "
+                    + str(self.current_test.display_name or self.current_test.name)
+                    + "\n"
+                )
 
         elif header == EclipseTestRunnerMessageIds.TEST_FAILED:
             self.current_test = container.get_by_id(int(args[0]))
@@ -441,7 +467,13 @@ class _JunitResultsHandler(_TestResultsHandler):
         elif header == EclipseTestRunnerMessageIds.TEST_END:
             self.current_test = None
         elif header == EclipseTestRunnerMessageIds.TRACE_START and self.current_test:
-            self.line_consumer = lambda line: self.current_test.append_trace(filter_lines(line, self.stack_trace_filter)) if self.current_test else ""
+            self.line_consumer = (
+                lambda line: self.current_test.append_trace(
+                    filter_lines(line, self.stack_trace_filter)
+                )
+                if self.current_test
+                else ""
+            )
         elif header == EclipseTestRunnerMessageIds.ACTUAL_START and self.current_test:
             self.line_consumer = self.current_test.append_actual
         elif header == EclipseTestRunnerMessageIds.EXPECTED_START and self.current_test:
@@ -464,17 +496,21 @@ class _TestNgResultsHandler(_TestResultsHandler):
     """Regular expression for a single line. The first group captures the JSON representation."""
 
     def prepare(self):
-        self.stack_trace_filter = [] if not enable_stack_trace_filter() else [
-            "com.microsoft.java.test.runner.",
-            "org.testng.internal.",
-            "org.testng.TestRunner",
-            "org.testng.SuiteRunner",
-            "org.testng.TestNG",
-            "org.testng.Assert",
-            "java.lang.reflect.Method.invoke",
-            "sun.reflect.",
-            "jdk.internal.reflect.",
-        ]
+        self.stack_trace_filter = (
+            []
+            if not enable_stack_trace_filter()
+            else [
+                "com.microsoft.java.test.runner.",
+                "org.testng.internal.",
+                "org.testng.TestRunner",
+                "org.testng.SuiteRunner",
+                "org.testng.TestNG",
+                "org.testng.Assert",
+                "java.lang.reflect.Method.invoke",
+                "sun.reflect.",
+                "jdk.internal.reflect.",
+            ]
+        )
 
     def parse(self, container: TestContainer, line: str) -> Optional[str]:
         match = re.match(self.LINE_REGEX, line.strip())
@@ -492,7 +528,9 @@ class _TestNgResultsHandler(_TestResultsHandler):
             test = container.get_by_id(data["attributes"]["name"])
             if test:
                 if "duration" in data["attributes"]:
-                    test.set_runtime(timedelta(seconds=float(data["attributes"]["duration"]) / 1000))
+                    test.set_runtime(
+                        timedelta(seconds=float(data["attributes"]["duration"]) / 1000)
+                    )
         if data["name"] == TestNgTestMessageName.TEST_FAILED:
             test = container.get_by_id(data["attributes"]["name"])
             if test:
@@ -500,9 +538,15 @@ class _TestNgResultsHandler(_TestResultsHandler):
                 if "message" in data["attributes"]:
                     test.add_message(data["attributes"]["message"])
                 if "trace" in data["attributes"]:
-                    test.append_trace(filter_lines(data["attributes"]["trace"], self.stack_trace_filter))
+                    test.append_trace(
+                        filter_lines(
+                            data["attributes"]["trace"], self.stack_trace_filter
+                        )
+                    )
                 if "duration" in data["attributes"]:
-                    test.set_runtime(timedelta(seconds=float(data["attributes"]["duration"]) / 1000))
+                    test.set_runtime(
+                        timedelta(seconds=float(data["attributes"]["duration"]) / 1000)
+                    )
 
 
 class TestResultsServer:
@@ -534,7 +578,8 @@ class TestResultsServer:
 
 class JunitResultsServer(TestResultsServer):
     """TCP Server that receives results from
-    https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/master/org.eclipse.jdt.junit.runtime/src/org/eclipse/jdt/internal/junit/runner/RemoteTestRunner.java"""
+    https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/master/org.eclipse.jdt.junit.runtime/src/org/eclipse/jdt/internal/junit/runner/RemoteTestRunner.java
+    """
 
     def _get_handler(self) -> Type[_TestResultsHandler]:
         return _JunitResultsHandler
@@ -542,7 +587,8 @@ class JunitResultsServer(TestResultsServer):
 
 class TestNgResultsServer(TestResultsServer):
     """TCP Server that receives results from
-    https://github.com/microsoft/vscode-java-test/blob/main/java-extension/com.microsoft.java.test.runner/src/main/java/com/microsoft/java/test/runner/Launcher.java"""
+    https://github.com/microsoft/vscode-java-test/blob/main/java-extension/com.microsoft.java.test.runner/src/main/java/com/microsoft/java/test/runner/Launcher.java
+    """
 
     def _get_handler(self) -> Type[_TestResultsHandler]:
         return _TestNgResultsHandler

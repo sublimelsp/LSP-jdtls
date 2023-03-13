@@ -9,11 +9,10 @@ QuickTextInput(...).show().then( do_something_with_text )
 Inspired by https://github.com/daveleroy/sublime_debugger/blob/master/modules/ui/input.py
 """
 
-from LSP.plugin.core.promise import Promise
-from LSP.plugin.core.typing import List, Optional, Dict, Any, Callable, Tuple, Union
-
 import sublime
 import sublime_plugin
+from LSP.plugin.core.promise import Promise
+from LSP.plugin.core.typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 
 class SelectableItem:
@@ -85,7 +84,7 @@ class QuickTextInput:
         placeholder: str = "",
         initial_text: str = "",
         validate: Optional[Callable[[str], bool]] = None,
-        preview: Optional[Callable[[str], Union[str, sublime.Html]]] = None
+        preview: Optional[Callable[[str], Union[str, sublime.Html]]] = None,
     ):
         self._window = window or sublime.active_window()
         self._placeholder = placeholder
@@ -93,9 +92,7 @@ class QuickTextInput:
         self._validate = validate
         self._preview = preview
         # Used here as Future
-        self._promise = Promise(
-            lambda _: None
-        )  # type: Promise[Optional[str]]
+        self._promise = Promise(lambda _: None)  # type: Promise[Optional[str]]
 
     def show(self) -> Promise[Optional[str]]:
         JdtlsInputCommand.enqueue(_TextInputHandler(self))
@@ -104,7 +101,6 @@ class QuickTextInput:
 
 
 class _TextInputHandler(sublime_plugin.TextInputHandler):
-
     def __init__(self, context: QuickTextInput):
         self.context = context
 

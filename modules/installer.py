@@ -1,23 +1,25 @@
-from .constants import DATA_DIR
-from .constants import INSTALL_DIR
-from .constants import JDTLS_URL
-from .constants import JDTLS_VERSION
-from .constants import LOMBOK_URL
-from .constants import LOMBOK_VERSION
-from .constants import SETTINGS_FILENAME
-from .constants import STORAGE_DIR
-from .constants import VSCODE_PLUGINS
-
-from LSP.plugin.core.typing import Callable, Union
-from LSP.plugin.core.views import get_storage_path
-from urllib.request import urlopen
-
 import os
 import shutil
-import sublime
 import tarfile
 import tempfile
 import zipfile
+from urllib.request import urlopen
+
+import sublime
+from LSP.plugin.core.typing import Callable, Union
+from LSP.plugin.core.views import get_storage_path
+
+from .constants import (
+    DATA_DIR,
+    INSTALL_DIR,
+    JDTLS_URL,
+    JDTLS_VERSION,
+    LOMBOK_URL,
+    LOMBOK_VERSION,
+    SETTINGS_FILENAME,
+    STORAGE_DIR,
+    VSCODE_PLUGINS,
+)
 
 
 def _jdtls_version() -> str:
@@ -27,6 +29,7 @@ def _jdtls_version() -> str:
 
 # File Download / Extraction
 ############################
+
 
 def download_file(url: str, file_name: str) -> None:
     with urlopen(url) as response, open(file_name, "wb") as out_file:
@@ -69,6 +72,7 @@ def extract_tar(url: str, path: str):
 # Path definitions
 ##################
 
+
 def storage_subpath() -> str:
     return os.path.join(get_storage_path(), STORAGE_DIR)
 
@@ -91,10 +95,7 @@ def vscode_plugin_path(plugin_name: str) -> str:
     plugin = VSCODE_PLUGINS[plugin_name]
     return os.path.join(
         install_path(),
-        "{name}-{version}".format(
-            name=plugin_name,
-            version=plugin["version"]
-        ),
+        "{name}-{version}".format(name=plugin_name, version=plugin["version"]),
     )
 
 
@@ -114,6 +115,7 @@ def lombok_jar_path() -> str:
 
 # Install / Update
 ###################
+
 
 def needs_update_or_installation() -> bool:
     result = not os.path.isdir(jdtls_path())

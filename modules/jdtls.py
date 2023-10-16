@@ -3,6 +3,7 @@ import os
 import re
 
 import sublime
+from urllib.parse import urlparse
 from LSP.plugin import (
     AbstractPlugin,
     Request,
@@ -171,7 +172,7 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
                 "progressReportProvider": configuration.settings.get(
                     SETTING_PROGRESS_REPORT_ENABLED
                 ),
-                "classFileContentsSupport": False,
+                "classFileContentsSupport": True,
                 "overrideMethodsPromptSupport": False,
                 "hashCodeEqualsPromptSupport": False,
                 "advancedOrganizeImportsSupport": False,
@@ -212,7 +213,11 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
             Request(
                 "java/classFileContents", text_document_identifier(uri), progress=True
             ),
-            lambda resp: callback(uri, resp, "Packages/Java/Java.sublime-syntax"),
+            lambda resp: callback(
+                urlparse(uri).path,
+                resp,
+                "Packages/Java/Java.sublime-syntax"
+            ),
             lambda err: callback(
                 "ERROR", str(err), "Packages/Text/Plain text.tmLanguage"
             ),

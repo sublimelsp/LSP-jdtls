@@ -5,6 +5,7 @@ def reload_plugin():
         if m.startswith(__package__ + ".") and m != __name__:
             del sys.modules[m]
 
+
 reload_plugin()
 
 from .modules import *  # noqa: E402, F403

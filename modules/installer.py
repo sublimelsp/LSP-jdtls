@@ -12,6 +12,7 @@ from LSP.plugin.core.views import get_storage_path
 from .constants import (
     DATA_DIR,
     INSTALL_DIR,
+    JDTLS_TAR_URL_FILE,
     JDTLS_URL,
     JDTLS_VERSION,
     LOMBOK_URL,
@@ -134,7 +135,8 @@ def install_or_update() -> None:
 
     # fmt: off
     sublime.status_message("LSP-jdtls: downloading jdtls...")
-    extract_tar(JDTLS_URL.format(version=version), jdtls_path())
+    with urlopen(JDTLS_TAR_URL_FILE.format(version=version)) as latest:
+        extract_tar(JDTLS_URL.format(version=version, tar=latest.read().decode().rstrip()), jdtls_path())
     sublime.status_message("LSP-jdtls: downloading lombok...")
     download_file(LOMBOK_URL.format(version=LOMBOK_VERSION), lombok_jar_path())
     for plugin_name, plugin in VSCODE_PLUGINS.items():

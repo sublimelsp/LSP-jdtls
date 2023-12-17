@@ -1,8 +1,9 @@
 # fmt: off
 LOMBOK_VERSION = "1.18.26"
 LOMBOK_URL = "https://repo1.maven.org/maven2/org/projectlombok/lombok/{version}/lombok-{version}.jar"
-JDTLS_VERSION = "1.20.0-202302201605"
-JDTLS_URL = "http://download.eclipse.org/jdtls/snapshots/jdt-language-server-{version}.tar.gz"
+JDTLS_VERSION = "1.20.0"
+JDTLS_TAR_URL_FILE = "https://download.eclipse.org/jdtls/milestones/{version}/latest.txt"
+JDTLS_URL = "https://download.eclipse.org/jdtls/milestones/{version}/{tar}"
 VSCODE_PLUGINS = {
     "vscode-java-debug": {
         "url": "https://github.com/microsoft/vscode-java-debug/releases/download/{version}/vscjava.vscode-java-debug-{version}.vsix",

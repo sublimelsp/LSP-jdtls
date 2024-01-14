@@ -2,7 +2,7 @@ import json
 import os
 
 import sublime
-from LSP.plugin import Session, parse_uri
+from LSP.plugin import Session, parse_uri, uri_from_view
 from LSP.plugin.core.constants import KIND_CLASS, KIND_METHOD
 from LSP.plugin.core.protocol import ExecuteCommandParams  # noqa: F401
 from LSP.plugin.core.protocol import WorkspaceEdit
@@ -10,7 +10,6 @@ from LSP.plugin.core.typing import Callable, List, Tuple
 from LSP.plugin.core.views import (
     first_selection_region,
     offset_to_point,
-    uri_from_view,
 )
 
 from .constants import SESSION_NAME

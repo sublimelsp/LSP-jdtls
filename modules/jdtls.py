@@ -12,7 +12,7 @@ from LSP.plugin import (
     unregister_plugin,
 )
 from LSP.plugin.core.protocol import DocumentUri
-from LSP.plugin.core.sessions import ExecuteCommandParams
+from LSP.plugin.core.protocol import ExecuteCommandParams
 from LSP.plugin.core.types import ClientConfig
 from LSP.plugin.core.typing import Any, Callable, Dict, List, Optional
 from LSP.plugin.core.views import text_document_identifier
@@ -228,14 +228,14 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
     #########################
 
     def on_pre_server_command(
-        self, command: ExecuteCommandParams, done: Callable[[], None]
+        self, command: ExecuteCommandParams, done_callback: Callable[[], None]
     ) -> bool:
         session = self.weaksession()
         if not session:
             return False
         if handle_client_command(
             session,
-            done,
+            done_callback,
             command["command"],
             command["arguments"] if "arguments" in command else [],
         ):

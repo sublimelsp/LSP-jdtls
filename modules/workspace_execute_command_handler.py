@@ -2,7 +2,6 @@
 
 import sublime
 from LSP.plugin import Session
-from LSP.plugin.core.edit import apply_workspace_edit, parse_workspace_edit
 from LSP.plugin.core.types import Callable
 from LSP.plugin.core.views import location_to_encoded_filename
 
@@ -43,12 +42,9 @@ def _set_null_analysis_mode(
 
 
 def _apply_workspace_edit(session: Session, done: Callable[[], None], *arguments):
-    changes = parse_workspace_edit(arguments[0])
-    window = session.window
-    sublime.set_timeout(
-        lambda: apply_workspace_edit(window, changes).then(
-            lambda _: sublime.set_timeout_async(done)
-        )
+    changes = arguments[0]
+    sublime.set_timeout_async(
+        lambda: session.apply_workspace_edit_async(changes).then(lambda _: done())
     )
 
 

@@ -4,8 +4,8 @@ import os
 import sublime
 from LSP.plugin import Session, parse_uri
 from LSP.plugin.core.constants import KIND_CLASS, KIND_METHOD
-from LSP.plugin.core.edit import WorkspaceEdit, parse_workspace_edit
 from LSP.plugin.core.protocol import ExecuteCommandParams  # noqa: F401
+from LSP.plugin.core.protocol import WorkspaceEdit
 from LSP.plugin.core.typing import Callable, List, Tuple
 from LSP.plugin.core.views import (
     first_selection_region,
@@ -52,17 +52,8 @@ class LspJdtlsGenerateTests(LspJdtlsTextCommand):
                 print(workspace_edit)
                 return
 
-            parsed_worspace_edit = parse_workspace_edit(workspace_edit)
-
-            def open_changed_file(result):
-                window = self.view.window()
-                if window and parsed_worspace_edit:
-                    for uri in parsed_worspace_edit:
-                        open_and_focus_uri(window, uri)
-                        return
-
-            session.apply_parsed_workspace_edits(parsed_worspace_edit).then(
-                open_changed_file
+            sublime.set_timeout_async(
+                lambda: session.apply_workspace_edit_async(workspace_edit)
             )
 
         session.execute_command(command, False).then(_on_done)

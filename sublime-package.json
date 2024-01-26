@@ -520,7 +520,9 @@
                             "Do not show any build status on start"
                           ]
                         },
-                        "boolean"
+                        {
+                          "type": "boolean"
+                        }
                       ],
                       "description": "Automatically show build status on startup.",
                       "default": "notification",

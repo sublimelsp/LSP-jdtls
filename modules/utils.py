@@ -32,9 +32,8 @@ def get_settings() -> sublime.Settings:
 
 
 def sublime_debugger_available() -> bool:
-    return "Packages/Debugger/debugger.sublime-settings" in sublime.find_resources(
-        "debugger.sublime-settings"
-    )
+    settings_names = ["debugger.sublime-settings", "Debugger.sublime-settings"]
+    return any([any([file.endswith(name) for file in sublime.find_resources(name)]) for name in settings_names])
 
 
 def open_and_focus_uri(window: sublime.Window, uri: str):

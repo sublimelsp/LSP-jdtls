@@ -5,8 +5,10 @@ import sublime
 from LSP.plugin import Session, parse_uri, uri_from_view
 from LSP.plugin.core.constants import KIND_CLASS, KIND_METHOD
 from LSP.plugin.core.edit import parse_workspace_edit
-from LSP.plugin.core.protocol import ExecuteCommandParams  # noqa: F401
-from LSP.plugin.core.protocol import WorkspaceEdit
+from LSP.plugin.core.protocol import (
+    ExecuteCommandParams,  # noqa: F401
+    WorkspaceEdit,
+)
 from LSP.plugin.core.typing import Callable, List, Tuple
 from LSP.plugin.core.views import (
     first_selection_region,
@@ -174,7 +176,7 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
         session.execute_command(command, False).then(
             lambda result: print("Error fetching debug arguments: " + str(result))
             if isinstance(result, Exception)
-            else self.resolve_debug_classpath(test_item, result)
+            else self.resolve_debug_classpath(test_item, result["body"])
         )
 
     def get_test_name(self, test_item: IJavaTestItem) -> str:

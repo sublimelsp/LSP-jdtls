@@ -148,7 +148,7 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
         session.execute_command(command, False).then(
             lambda result: print("Error fetching tests: " + str(result))
             if isinstance(result, Exception)
-            else self.select_test_item(result, self.fetch_debug_args)
+            else self.select_test_item(result or [], self.fetch_debug_args)
         )
 
     def select_test_item(
@@ -288,12 +288,14 @@ class LspJdtlsRunTestClass(LspJdtlsTestCommand):
     def select_test_item(
         self, test_items: List[IJavaTestItem], then: Callable[[IJavaTestItem], None]
     ) -> None:
-        for item in test_items:
+        for item in test_items or []:
             if item["testLevel"] == TestLevel.Class:
                 then(item)
                 return
-        sublime.error_message("No test at class level found")
-        raise ValueError("No test at class level found")
+
+        window = self.view.window()
+        if window and window.is_valid():
+            window.status_message("No test class found")
 
 
 class LspJdtlsRunTestAtCursor(LspJdtlsTestCommand):
@@ -305,7 +307,11 @@ class LspJdtlsRunTestAtCursor(LspJdtlsTestCommand):
         self, test_items: List[IJavaTestItem], then: Callable[[IJavaTestItem], None]
     ) -> None:
         if not test_items:
+            window = self.view.window()
+            if window and window.is_valid():
+                window.status_message("No test method found at cursor")
             return
+
         item = None
         flattened = flatten_test_items(test_items)
         region = first_selection_region(self.view)
@@ -335,6 +341,12 @@ class LspJdtlsRunTest(LspJdtlsTestCommand):
     def select_test_item(
         self, test_items: List[IJavaTestItem], then: Callable[[IJavaTestItem], None]
     ) -> None:
+        if not test_items:
+            window = self.view.window()
+            if window and window.is_valid():
+                window.status_message("No test method found")
+            return
+
         def kind_from_test_level(test_level: TestLevel) -> Tuple[int, str, str]:
             if test_level == TestLevel.Class:
                 return KIND_CLASS

@@ -52,23 +52,20 @@ def language_actionableNotification(
     run_command(command)
 
 
+progress_reports = dict()  # type: dict[str, str]
+
+
 def language_progressReport(session: Session, params: ProgressReport):
     key = params["id"] if "id" in params else "jdtls-status-dummy-key"
-    if not params["complete"]:
-        session.set_window_status_async(
-            key,
-            "{}% {}".format(
-                params["workDone"] / params["totalWork"] * 100, params["task"]
-            ),
-        )
-    else:
-        session.set_window_status_async(
-            key,
-            "{}% {}".format(
-                params["totalWork"] / params["totalWork"] * 100, params["task"]
-            ),
-        )
-        sublime.set_timeout_async(lambda: session.erase_window_status_async(key), 1000)
+    progress_reports[key] = "{}% {}".format(params["workDone"] / params["totalWork"] * 100, params["task"])
+    _update_config_status_async(session)
+    if params["complete"]:
+        progress_reports.pop(key, None)
+        sublime.set_timeout_async(lambda: _update_config_status_async(session), 1000)
+
+
+def _update_config_status_async(session: Session) -> None:
+    session.set_config_status_async(", ".join(progress_reports.values()))
 
 
 def language_status(session: Session, params: StatusReport) -> None:

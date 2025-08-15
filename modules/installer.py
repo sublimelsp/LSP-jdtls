@@ -9,7 +9,7 @@ from pathlib import Path
 
 import sublime
 from LSP.plugin.core.typing import Callable, Union
-from LSP.plugin.core.views import get_storage_path
+from LSP.plugin.core.constants import ST_STORAGE_PATH
 
 from .constants import (
     DATA_DIR,
@@ -96,7 +96,7 @@ def extract_tar(url: str, path: str):
 
 
 def storage_subpath() -> str:
-    return os.path.join(get_storage_path(), STORAGE_DIR)
+    return os.path.join(ST_STORAGE_PATH, STORAGE_DIR)
 
 
 def install_path() -> str:

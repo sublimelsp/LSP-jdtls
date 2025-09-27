@@ -48,7 +48,7 @@
     "test.filterStacktrace": true,
     // The server-specific settings.
     "settings": {
-        // Specifies the folder path to the JDK (17 or more recent) used to launch the Java Language Server.
+        // Specifies the folder path to the JDK (21 or more recent) used to launch the Java Language Server.
         "java.jdt.ls.java.home": null,
         // Enable/disable the 'auto build'
         "java.autobuild.enabled": true,

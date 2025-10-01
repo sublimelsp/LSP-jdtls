@@ -39,7 +39,7 @@
     ],
     "initializationOptions": {},
     // Overwrite the jdtls version. An empty string uses the latest release that was tested by the LSP-jdtls developers. 
-    // Must be formatted like "0.71.0-202103052234" matching http://download.eclipse.org/jdtls/snapshots/.
+    // Must be formatted like "1.27.1" matching https://download.eclipse.org/jdtls/milestones/.
     // Restart sublime after changing this setting
     "version": "",
     // Removes test runner related lines from stacktraces.

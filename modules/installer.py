@@ -1,13 +1,15 @@
 import os
 import shutil
+import stat
 import tarfile
 import tempfile
 import zipfile
 from urllib.request import urlopen
+from pathlib import Path
 
 import sublime
 from LSP.plugin.core.typing import Callable, Union
-from LSP.plugin.core.views import get_storage_path
+from LSP.plugin.core.constants import ST_STORAGE_PATH
 
 from .constants import (
     DATA_DIR,
@@ -51,8 +53,27 @@ def _extract_file(
         os.makedirs(uncompress_dir)
         with open_function(compressed_file) as compressed_file:
             compressed_file.extractall(uncompress_dir)
+        # Make writable before delete due to issue with latest jdt-*.tar.gz:
+        # https://github.com/sublimelsp/LSP-jdtls/pull/58
+        _make_all_files_writable(uncompress_dir)
         shutil.move(uncompress_dir, path)
 
+def _make_all_files_writable(root_dir):
+    """
+    Make's all files in folder writeable
+    """
+    for dirpath, _, filenames in os.walk(root_dir):
+        for filename in filenames:
+            path = Path(dirpath) / filename
+            try:
+                # Skip if already writable
+                if os.access(path, os.W_OK):
+                    continue
+                # Add user write bit
+                new_mode = path.stat().st_mode | stat.S_IWRITE
+                os.chmod(path, new_mode)
+            except Exception as e:
+                print(f"Failed on {path}: {e}")
 
 def extract_zip(url: str, path: str):
     """
@@ -75,7 +96,7 @@ def extract_tar(url: str, path: str):
 
 
 def storage_subpath() -> str:
-    return os.path.join(get_storage_path(), STORAGE_DIR)
+    return os.path.join(ST_STORAGE_PATH, STORAGE_DIR)
 
 
 def install_path() -> str:
@@ -130,7 +151,12 @@ def install_or_update() -> None:
     version = _jdtls_version()
     basedir = storage_subpath()
     if os.path.isdir(basedir):
-        shutil.rmtree(basedir)
+        # Make writable before delete due to issue with latest jdt-*.tar.gz:
+        # https://github.com/sublimelsp/LSP-jdtls/pull/58
+        def del_rw(action, name, exc):
+            os.chmod(name, stat.S_IWRITE)
+            os.remove(name)
+        shutil.rmtree(basedir, onerror=del_rw)
     os.makedirs(basedir)
 
     # fmt: off

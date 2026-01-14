@@ -1,23 +1,23 @@
 # fmt: off
-LOMBOK_VERSION = "1.18.30"
+LOMBOK_VERSION = "1.18.38"
 LOMBOK_URL = "https://repo1.maven.org/maven2/org/projectlombok/lombok/{version}/lombok-{version}.jar"
-JDTLS_VERSION = "1.27.1"
+JDTLS_VERSION = "1.47.0"
 JDTLS_TAR_URL_FILE = "https://download.eclipse.org/jdtls/milestones/{version}/latest.txt"
 JDTLS_URL = "https://download.eclipse.org/jdtls/milestones/{version}/{tar}"
 VSCODE_PLUGINS = {
     "vscode-java-debug": {
-        "url": "https://github.com/microsoft/vscode-java-debug/releases/download/{version}/vscjava.vscode-java-debug-{version}.vsix",
-        "version": "0.52.0",
+        "url": "https://open-vsx.org/api/vscjava/vscode-java-debug/{version}/file/vscjava.vscode-java-debug-{version}.vsix",
+        "version": "0.58.2",
         "extension_path": "extension"
     },
     "vscode-java-test": {
-        "url": "https://github.com/microsoft/vscode-java-test/releases/download/{version}/vscjava.vscode-java-test-{version}.vsix",
-        "version": "0.39.0",
+        "url": "https://open-vsx.org/api/vscjava/vscode-java-test/{version}/file/vscjava.vscode-java-test-{version}.vsix",
+        "version": "0.43.1",
         "extension_path": "extension"
     },
-    "vscode-java-decompiler": {
+    "vscode-java-decompiler": {  # https://github.com/dgileadi/vscode-java-decompiler/issues/17
         "url": "https://github.com/dgileadi/vscode-java-decompiler/archive/{version}.zip",
-        "version": "5eaf2fcf73ba6763f1eba69047f631fba80f9a50",
+        "version": "57691a5fdacbc67a8b606e34fb636fa89687430b",  # 0.0.4
         "extension_path": "vscode-java-decompiler-{version}"
     }
 }

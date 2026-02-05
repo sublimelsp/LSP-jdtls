@@ -1,18 +1,18 @@
 # fmt: off
 LOMBOK_VERSION = "1.18.38"
 LOMBOK_URL = "https://repo1.maven.org/maven2/org/projectlombok/lombok/{version}/lombok-{version}.jar"
-JDTLS_VERSION = "1.47.0"
+JDTLS_VERSION = "1.50.0"
 JDTLS_TAR_URL_FILE = "https://download.eclipse.org/jdtls/milestones/{version}/latest.txt"
 JDTLS_URL = "https://download.eclipse.org/jdtls/milestones/{version}/{tar}"
 VSCODE_PLUGINS = {
     "vscode-java-debug": {
         "url": "https://open-vsx.org/api/vscjava/vscode-java-debug/{version}/file/vscjava.vscode-java-debug-{version}.vsix",
-        "version": "0.58.2",
+        "version": "0.58.5",
         "extension_path": "extension"
     },
     "vscode-java-test": {
         "url": "https://open-vsx.org/api/vscjava/vscode-java-test/{version}/file/vscjava.vscode-java-test-{version}.vsix",
-        "version": "0.43.1",
+        "version": "0.44.0",
         "extension_path": "extension"
     },
     "vscode-java-decompiler": {  # https://github.com/dgileadi/vscode-java-decompiler/issues/17

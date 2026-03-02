@@ -2,7 +2,7 @@
 
 import sublime
 from LSP.plugin import Session
-from LSP.plugin.core.types import Callable
+from LSP.plugin.core.typing import Callable
 from LSP.plugin.core.views import location_to_encoded_filename
 
 from .constants import SETTING_ENABLE_NULL_ANALYSIS

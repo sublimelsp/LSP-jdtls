@@ -6,10 +6,13 @@ https://github.com/redhat-developer/vscode-java/blob/master/src/protocol.ts
 
 from __future__ import annotations
 
-from typing import Any, TypedDict
+from enum import IntEnum
+from typing import Any, TypedDict, TYPE_CHECKING
 from typing_extensions import NotRequired
 
-from LSP.plugin.core.protocol import Command, IntEnum, MessageType
+
+if TYPE_CHECKING:
+    from LSP.protocol import Command, MessageType
 
 
 class ActionableNotification(TypedDict):

@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING
 from typing_extensions import override
 
 from LSP.plugin import Notification, Session
-from LSP.plugin.core.protocol import Error, ExecuteCommandParams
-from LSP.protocol import TextDocumentIdentifier
+from LSP.plugin.core.protocol import Error
+from LSP.protocol import ExecuteCommandParams, TextDocumentIdentifier
 
 from .utils import LspJdtlsTextCommand
 

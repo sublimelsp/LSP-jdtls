@@ -17,7 +17,7 @@ from LSP.plugin import (
     unregister_plugin,
 )
 from LSP.plugin.core.views import text_document_identifier
-from LSP.protocol import ConfigurationItem, TextDocumentIdentifier
+from LSP.protocol import TextDocumentIdentifier
 
 from . import installer
 from .constants import (
@@ -45,7 +45,7 @@ from .workspace_execute_command_handler import handle_client_command
 
 if TYPE_CHECKING:
     from LSP.plugin import ClientConfig
-    from LSP.protocol import DocumentUri, ExecuteCommandParams
+    from LSP.protocol import ConfigurationItem, DocumentUri, ExecuteCommandParams
 
 
 @add_request_handler("workspace/executeClientCommand", workspace_executeClientCommand)

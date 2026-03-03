@@ -74,7 +74,7 @@ class QuickSelect:
         self._resolve_promise = packaged_task[1]
 
     def resolve_promise(self, value: list[SelectableItem]) -> None:
-        self.resolve_promise(value)
+        self._resolve_promise(value)
 
     def show(self) -> Promise[list[SelectableItem] | None]:
         JdtlsInputCommand.enqueue(_ListInputHandler(self))
@@ -106,7 +106,7 @@ class QuickTextInput:
         self._resolve_promise = packaged_task[1]
 
     def resolve_promise(self, value: str | None) -> None:
-        self.resolve_promise(value)
+        self._resolve_promise(value)
 
     def show(self) -> Promise[str | None]:
         JdtlsInputCommand.enqueue(_TextInputHandler(self))

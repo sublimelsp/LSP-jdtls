@@ -44,9 +44,8 @@ from .workspace_execute_client_command_handler import workspace_executeClientCom
 from .workspace_execute_command_handler import handle_client_command
 
 if TYPE_CHECKING:
-    from LSP.plugin.core.types import ClientConfig
-    from LSP.plugin.core.protocol import ExecuteCommandParams
-    from LSP.plugin.core.protocol import DocumentUri
+    from LSP.plugin import ClientConfig
+    from LSP.protocol import DocumentUri, ExecuteCommandParams
 
 
 @add_request_handler("workspace/executeClientCommand", workspace_executeClientCommand)

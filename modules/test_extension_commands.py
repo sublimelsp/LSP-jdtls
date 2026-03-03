@@ -2,22 +2,15 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
 from typing_extensions import override
 
 import sublime
 from LSP.plugin import Session, parse_uri, uri_from_view
 from LSP.plugin.core.constants import KIND_CLASS, KIND_METHOD
 from LSP.plugin.core.edit import WorkspaceEditSummary, parse_workspace_edit
-from LSP.plugin.core.protocol import (
-    Error,
-    ExecuteCommandParams,
-    WorkspaceEdit,
-)
-from LSP.plugin.core.views import (
-    first_selection_region,
-    offset_to_point,
-)
+from LSP.plugin.core.protocol import Error
+from LSP.plugin.core.views import first_selection_region, offset_to_point
 
 from .constants import SESSION_NAME
 from .installer import vscode_plugin_path
@@ -36,6 +29,9 @@ from .utils import (
     open_and_focus_uri,
     sublime_debugger_available,
 )
+
+if TYPE_CHECKING:
+    from LSP.protocol import ExecuteCommandParams, WorkspaceEdit
 
 
 class LspJdtlsGenerateTests(LspJdtlsTextCommand):

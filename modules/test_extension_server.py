@@ -1,20 +1,15 @@
+from __future__ import annotations
+
 import json
 import re
 import socketserver
 import threading
 from datetime import datetime, timedelta
+from enum import Enum
+from typing import Literal, TypedDict, cast, final
+from typing_extensions import NotRequired, override
 
 import sublime
-from LSP.plugin.core.typing import (
-    Enum,
-    List,
-    Literal,
-    NotRequired,
-    Optional,
-    Type,
-    TypedDict,
-    Union,
-)
 
 from .utils import filter_lines, get_settings
 
@@ -28,6 +23,7 @@ def enable_stack_trace_filter() -> bool:
     return get_settings().get("test.filterStacktrace")
 
 
+@final
 class EclipseTestRunnerMessageIds:
     """See: https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/master/org.eclipse.jdt.junit.runtime/src/org/eclipse/jdt/internal/junit/runner/MessageIds.java"""
 
@@ -143,35 +139,31 @@ class TestNgTestMessageName(Enum):
     TEST_FAILED = "testFailed"
 
 
-TestNgTestMessageAttributes = TypedDict(
-    "TestNgTestMessageAttributes",
-    {
-        "name": str,
-        "message": NotRequired[str],
-        "trace": NotRequired[str],
-        "duration": NotRequired[str],
-    },
-)
+class TestNgTestMessageAttributes(TypedDict):
+    name: str
+    message: NotRequired[str]
+    trace: NotRequired[str]
+    duration: NotRequired[str]
 
 
-TestNgTestMessageItem = TypedDict(
-    "TestNgTestMessageItem",
-    {"name": TestNgTestMessageName, "attributes": TestNgTestMessageAttributes},
-)
+class TestNgTestMessageItem(TypedDict):
+    name: TestNgTestMessageName
+    attributes: TestNgTestMessageAttributes
 
 
+@final
 class Test:
     def __init__(
         self,
-        id: Union[int, str],
+        id: int | str,
         name: str,
-        is_suite: Optional[bool] = False,
-        count: Optional[int] = 1,
-        is_dynamic: Optional[bool] = False,
-        parent: Optional["Test"] = None,
-        display_name: Optional[str] = None,
-        parameter_types: Optional[str] = None,
-        unique_id: Optional[str] = None,
+        is_suite: bool | None = False,
+        count: int | None = 1,
+        is_dynamic: bool | None = False,
+        parent: Test | None = None,
+        display_name: str | None = None,
+        parameter_types: str | None = None,
+        unique_id: str | None = None,
     ):
         self.id = id
         self.name = name
@@ -189,16 +181,16 @@ class Test:
         self.display_name = display_name
         self.parameter_types = parameter_types
         self.unique_id = unique_id
-        self.additional_info = []  # type: List[AdditionalTestInfo]
+        self.additional_info: list[AdditionalTestInfo] = []
 
-        self._children = []  # type: List["Test"]
+        self._children: list[Test] = []
         self._failed = False
-        self._trace = ""  # type: str
-        self._actual = ""  # type: str
-        self._expected = ""  # type: str
-        self._started = False  # type: bool
-        self._runtime = None  # type: Optional[timedelta]
-        self._message = None  # type: Optional[str]
+        self._trace: str = ""
+        self._actual: str = ""
+        self._expected: str = ""
+        self._started: bool = False
+        self._runtime: timedelta | None = None
+        self._message: str | None = None
 
         if parent:
             parent._children.append(self)
@@ -212,57 +204,57 @@ class Test:
         self.method_name = match.group(1) if match else None
         self.class_name = match.group(2) if match else None
 
-    def set_failed(self):
+    def set_failed(self) -> None:
         self._failed = True
         # The runner may not send TEST_START :(
         self._started = True
         if self.parent:
             self.parent.set_failed()
 
-    def set_started(self):
+    def set_started(self) -> None:
         self._started = True
         if self.parent:
             self.parent.set_started()
 
-    def is_failed(self):
+    def is_failed(self) -> bool:
         return self._failed
 
-    def get_children(self):
+    def get_children(self) -> list[Test]:
         return self._children.copy()
 
-    def add_message(self, message: str):
+    def add_message(self, message: str) -> None:
         self._message = message
 
-    def get_message(self) -> Optional[str]:
+    def get_message(self) -> str | None:
         return self._message
 
-    def append_trace(self, line: str):
+    def append_trace(self, line: str) -> None:
         self._trace += line
 
-    def get_trace(self) -> Optional[str]:
+    def get_trace(self) -> str | None:
         return self._trace
 
-    def append_actual(self, line: str):
+    def append_actual(self, line: str) -> None:
         self._actual += line
 
-    def get_actual(self) -> Optional[str]:
+    def get_actual(self) -> str | None:
         return self._actual
 
-    def append_expected(self, line: str):
+    def append_expected(self, line: str) -> None:
         self._expected += line
 
-    def get_expected(self) -> Optional[str]:
+    def get_expected(self) -> str | None:
         return self._expected
 
-    def set_runtime(self, runtime: timedelta):
+    def set_runtime(self, runtime: timedelta) -> None:
         self._runtime = runtime
 
-    def get_runtime(self) -> Optional[timedelta]:
+    def get_runtime(self) -> timedelta | None:
         return self._runtime
 
     def to_markdown(self, level: int) -> str:
         """Creates a markdown item including the results of this test."""
-        additional_info = self.additional_info.copy()  # type: List[str]
+        additional_info = self.additional_info.copy()
         if not self._started:
             additional_info.append("skipped")
         if self._runtime:
@@ -277,7 +269,7 @@ class Test:
 
         inner_padding = "    " * (level + 1)
 
-        def pad(lines: str):
+        def pad(lines: str) -> str:
             sep = "\n" + inner_padding
             return sep.join(line for line in lines.split("\n"))
 
@@ -316,21 +308,22 @@ class Test:
         return result
 
 
+@final
 class TestContainer:
-    def __init__(self):
-        self._by_id = {}  # type: Dict[Union[int, str], Test]
-        self._roots = []  # type: List[Test]
+    def __init__(self) -> None:
+        self._by_id: dict[int | str, Test] = {}
+        self._roots: list[Test] = []
 
-    def get_by_id(self, id: Union[int, str]) -> Optional[Test]:
+    def get_by_id(self, id: int | str) -> Test | None:
         return self._by_id.get(id, None)
 
-    def insert(self, test: Test):
+    def insert(self, test: Test) -> None:
         self._by_id[test.id] = test
 
         if not test.parent:
             self._roots.append(test)
 
-    def insert_from_testtree(self, testtree_repr: List[str]) -> Test:
+    def insert_from_testtree(self, testtree_repr: list[str]) -> Test:
         test = Test(
             int(testtree_repr[0]),
             testtree_repr[1],
@@ -354,20 +347,20 @@ class TestContainer:
 
 
 class _TestResultsHandler(socketserver.StreamRequestHandler):
-    def prepare(self):
+    def prepare(self) -> None:
         ...
 
-    def parse(self, container: TestContainer, line: str) -> Optional[str]:
+    def parse(self, container: TestContainer, line: str) -> str | None:
         """Parse one line. The line is provided as-is (including trailing whitespace and newlines).
         Optionally return a status string.
         """
-        ...
 
-    def handle(self):
+    @override
+    def handle(self) -> None:
         panel = sublime.active_window().create_output_panel("JDTLS Test Log")
 
         view = sublime.active_window().new_file(
-            0, sublime.find_resources("Markdown.sublime-syntax")[0]
+            sublime.NewFileFlags.NONE, sublime.find_resources("Markdown.sublime-syntax")[0]
         )
         view.set_name("JDTLS Test Results")
         view.set_scratch(True)
@@ -401,17 +394,18 @@ _{ts}_
             ts=timestamp.strftime("%Y-%m-%d %H:%M:%S"), items=container.to_markdown(0)
         )
 
-        results += "\n_took: {} s_\n".format(
-            (datetime.now() - timestamp).total_seconds()
-        )
+        results += f"\n_took: {(datetime.now() - timestamp).total_seconds()} s_\n"
         view.run_command("select_all")
         view.run_command("right_delete")
         view.run_command("append", {"characters": results})
 
 
+@final
 class _JunitResultsHandler(_TestResultsHandler):
-    def prepare(self):
-        self.current_test = None  # type: Optional[Test]
+
+    @override
+    def prepare(self) -> None:
+        self.current_test: Test | None = None
         # Used to consume traces, actual, expected
         self.line_consumer = None
         self.stack_trace_filter = (
@@ -434,7 +428,8 @@ class _JunitResultsHandler(_TestResultsHandler):
             ]
         )
 
-    def parse(self, container: TestContainer, line: str) -> Optional[str]:
+    @override
+    def parse(self, container: TestContainer, line: str) -> str | None:
         header, args_str = (
             line[: EclipseTestRunnerMessageIds.MSG_HEADER_LENGTH],
             line[EclipseTestRunnerMessageIds.MSG_HEADER_LENGTH :].rstrip(),
@@ -489,13 +484,16 @@ class _JunitResultsHandler(_TestResultsHandler):
             pass
         elif self.line_consumer:
             self.line_consumer(line)
+        return None
 
 
+@final
 class _TestNgResultsHandler(_TestResultsHandler):
     LINE_REGEX = r"@@<TestRunner-(.*?)-TestRunner>"
     """Regular expression for a single line. The first group captures the JSON representation."""
 
-    def prepare(self):
+    @override
+    def prepare(self) -> None:
         self.stack_trace_filter = (
             []
             if not enable_stack_trace_filter()
@@ -512,12 +510,13 @@ class _TestNgResultsHandler(_TestResultsHandler):
             ]
         )
 
-    def parse(self, container: TestContainer, line: str) -> Optional[str]:
+    @override
+    def parse(self, container: TestContainer, line: str) -> str | None:
         match = re.match(self.LINE_REGEX, line.strip())
         if not match:
-            return
+            return None
         json_string = match.group(1)
-        data = json.loads(json_string)  # type: TestNgTestMessageItem
+        data = cast('TestNgTestMessageItem', json.loads(json_string))
 
         if data["name"] == TestNgTestMessageName.TEST_STARTED:
             test = Test(data["attributes"]["name"], data["attributes"]["name"])
@@ -526,11 +525,10 @@ class _TestNgResultsHandler(_TestResultsHandler):
             return "Running " + test.name + "\n"
         if data["name"] == TestNgTestMessageName.TEST_FINISHED:
             test = container.get_by_id(data["attributes"]["name"])
-            if test:
-                if "duration" in data["attributes"]:
-                    test.set_runtime(
-                        timedelta(seconds=float(data["attributes"]["duration"]) / 1000)
-                    )
+            if test and "duration" in data["attributes"]:
+                test.set_runtime(
+                    timedelta(seconds=float(data["attributes"]["duration"]) / 1000)
+                )
         if data["name"] == TestNgTestMessageName.TEST_FAILED:
             test = container.get_by_id(data["attributes"]["name"])
             if test:
@@ -547,19 +545,20 @@ class _TestNgResultsHandler(_TestResultsHandler):
                     test.set_runtime(
                         timedelta(seconds=float(data["attributes"]["duration"]) / 1000)
                     )
+        return None
 
 
 class TestResultsServer:
-    def __init__(self):
-        self.server = socketserver.TCPServer(("localhost", 0), self._get_handler())
+    def __init__(self) -> None:
+        self.server: socketserver.TCPServer = socketserver.TCPServer(("localhost", 0), self._get_handler())
 
-    def _get_handler(self) -> Type[_TestResultsHandler]:
+    def _get_handler(self) -> type[_TestResultsHandler]:
         ...
 
     def get_port(self) -> int:
         return self.server.socket.getsockname()[1]
 
-    def receive_test_results_async(self):
+    def receive_test_results_async(self) -> None:
         """Handles a single request from a worker thread.
         The current clients use only a single stream request:
         https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/f33d12e0bf97384ac97e71df290684814555db5c/org.eclipse.jdt.junit.runtime/src/org/eclipse/jdt/internal/junit/runner/RemoteTestRunner.java#L653
@@ -568,7 +567,7 @@ class TestResultsServer:
         After the request the server is shutdown and closed.
         """
 
-        def _handle_single():
+        def _handle_single() -> None:
             self.server.handle_request()
             self.server.server_close()
 
@@ -581,7 +580,8 @@ class JunitResultsServer(TestResultsServer):
     https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/master/org.eclipse.jdt.junit.runtime/src/org/eclipse/jdt/internal/junit/runner/RemoteTestRunner.java
     """
 
-    def _get_handler(self) -> Type[_TestResultsHandler]:
+    @override
+    def _get_handler(self) -> type[_TestResultsHandler]:
         return _JunitResultsHandler
 
 
@@ -590,5 +590,6 @@ class TestNgResultsServer(TestResultsServer):
     https://github.com/microsoft/vscode-java-test/blob/main/java-extension/com.microsoft.java.test.runner/src/main/java/com/microsoft/java/test/runner/Launcher.java
     """
 
-    def _get_handler(self) -> Type[_TestResultsHandler]:
+    @override
+    def _get_handler(self) -> type[_TestResultsHandler]:
         return _TestNgResultsHandler

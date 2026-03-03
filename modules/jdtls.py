@@ -1,21 +1,23 @@
+from __future__ import annotations
+
 import json
 import os
 import re
+from typing import Any, Callable, TYPE_CHECKING
+from typing_extensions import override
 
 import sublime
 from urllib.parse import urlparse
 from LSP.plugin import (
     AbstractPlugin,
+    DottedDict,
     Request,
     WorkspaceFolder,
     register_plugin,
     unregister_plugin,
 )
-from LSP.plugin.core.protocol import DocumentUri
-from LSP.plugin.core.protocol import ExecuteCommandParams
-from LSP.plugin.core.types import ClientConfig
-from LSP.plugin.core.typing import Any, Callable, Dict, List, Optional
 from LSP.plugin.core.views import text_document_identifier
+from LSP.protocol import ConfigurationItem, TextDocumentIdentifier
 
 from . import installer
 from .constants import (
@@ -38,10 +40,13 @@ from .utils import (
     get_settings,
     view_for_uri_async,
 )
-from .workspace_execute_client_command_handler import (
-    workspace_executeClientCommand,
-)
+from .workspace_execute_client_command_handler import workspace_executeClientCommand
 from .workspace_execute_command_handler import handle_client_command
+
+if TYPE_CHECKING:
+    from LSP.plugin.core.types import ClientConfig
+    from LSP.plugin.core.protocol import ExecuteCommandParams
+    from LSP.plugin.core.protocol import DocumentUri
 
 
 @add_request_handler("workspace/executeClientCommand", workspace_executeClientCommand)
@@ -52,6 +57,7 @@ from .workspace_execute_command_handler import handle_client_command
 )
 class EclipseJavaDevelopmentTools(AbstractPlugin):
     @classmethod
+    @override
     def name(cls) -> str:
         return SESSION_NAME
 
@@ -59,10 +65,12 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
     ##########################
 
     @classmethod
+    @override
     def needs_update_or_installation(cls) -> bool:
         return installer.needs_update_or_installation()
 
     @classmethod
+    @override
     def install_or_update(cls) -> None:
         installer.install_or_update()
 
@@ -70,7 +78,8 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
     ######################
 
     @classmethod
-    def additional_variables(cls) -> Optional[Dict[str, str]]:
+    @override
+    def additional_variables(cls) -> dict[str, str] | None:
         settings = get_settings()
 
         java_home = settings.get("settings").get(SETTING_JAVA_HOME)
@@ -99,7 +108,7 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
             elif p == "linux":
                 return "linux"
             else:
-                raise ValueError("unknown platform: {}".format(p))
+                raise ValueError(f"unknown platform: {p}")
 
         return {
             "java_executable": java_executable,
@@ -152,13 +161,14 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         configuration.init_options.set("bundles", bundles)
 
     @classmethod
+    @override
     def on_pre_start(
         cls,
         window: sublime.Window,
         initiating_view: sublime.View,
-        workspace_folders: List[WorkspaceFolder],
+        workspace_folders: list[WorkspaceFolder],
         configuration: ClientConfig,
-    ) -> Optional[str]:
+    ) -> str | None:
         cls._enable_lombok(configuration)
         cls._insert_bundles(configuration)
 
@@ -198,6 +208,7 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
 
         return None
 
+    @override
     def on_open_uri_async(
         self, uri: DocumentUri, callback: Callable[[str, str, str], None]
     ) -> bool:
@@ -210,39 +221,33 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
         # https://github.com/redhat-developer/vscode-java/blob/9f32875a67352487f5c414bb7fef04c9b00af89d/src/providerDispatcher.ts#L61-L76
         # https://github.com/redhat-developer/vscode-java/blob/9f32875a67352487f5c414bb7fef04c9b00af89d/src/providerDispatcher.ts#L27-L28
         session.send_request_async(
-            Request(
+            Request[TextDocumentIdentifier, str](
                 "java/classFileContents", text_document_identifier(uri), progress=True
             ),
-            lambda resp: callback(
-                urlparse(uri).path,
-                resp,
-                "Packages/Java/Java.sublime-syntax"
-            ),
-            lambda err: callback(
-                "ERROR", str(err), "Packages/Text/Plain text.tmLanguage"
-            ),
+            lambda resp: callback(urlparse(uri).path, resp, "Packages/Java/Java.sublime-syntax"),
+            lambda err: callback("ERROR", str(err), "Packages/Text/Plain text.tmLanguage"),
         )
         return True
 
     # Custom command handling
     #########################
 
+    @override
     def on_pre_server_command(
         self, command: ExecuteCommandParams, done_callback: Callable[[], None]
     ) -> bool:
         session = self.weaksession()
         if not session:
             return False
-        if handle_client_command(
+        return handle_client_command(
             session,
             done_callback,
             command["command"],
             command["arguments"] if "arguments" in command else [],
-        ):
-            return True
-        return False
+        )
 
-    def on_workspace_configuration(self, params: Dict, configuration: Any) -> Any:
+    @override
+    def on_workspace_configuration(self, params: ConfigurationItem, configuration: Any) -> Any:
         if (
             "section" in params
             and "scopeUri" in params
@@ -257,7 +262,8 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
                     )
         return configuration
 
-    def on_settings_changed(self, _) -> None:
+    @override
+    def on_settings_changed(self, settings: DottedDict) -> None:
         # Workaround for https://github.com/eclipse/eclipse.jdt.ls/issues/2365
         session = self.weaksession()
         if session:

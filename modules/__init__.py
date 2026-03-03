@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .debug_extension import LspJdtlsRefreshWorkspace
 from .jdtls import EclipseJavaDevelopmentTools, plugin_loaded, plugin_unloaded
 from .jdtls_commands import JdtlsClearData, LspJdtlsBuildWorkspace

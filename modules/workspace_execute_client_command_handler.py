@@ -4,7 +4,7 @@
 # See https://github.com/redhat-developer/vscode-java/blob/master/src/commands.ts
 
 from LSP.plugin import Response, Session
-from LSP.plugin.core.typing import Any, Callable, List, Optional
+from typing import Any, Callable, List, Optional
 
 from .quick_input_panel import QuickSelect, QuickTextInput, SelectableItem
 

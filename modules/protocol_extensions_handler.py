@@ -55,19 +55,22 @@ def language_actionableNotification(
 
 
 def language_progressReport(session: Session, params: ProgressReport) -> None:
+    key = params["id"] if "id" in params else "jdtls-status-dummy-key"
     if not params["complete"]:
-        session.set_config_status_async(
+        session.set_window_status_async(
+            key,
             "{}% {}".format(
                 params["workDone"] / params["totalWork"] * 100, params["task"]
             ),
         )
     else:
-        session.set_config_status_async(
+        session.set_window_status_async(
+            key,
             "{}% {}".format(
                 params["totalWork"] / params["totalWork"] * 100, params["task"]
             ),
         )
-        sublime.set_timeout_async(lambda: session.set_config_status_async(''), 1000)
+        sublime.set_timeout_async(lambda: session.erase_window_status_async(key), 1000)
 
 
 def language_status(session: Session, params: StatusReport) -> None:

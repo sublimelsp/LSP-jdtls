@@ -1,13 +1,18 @@
 """ Client-side handler for workspace/executeCommand """
 
+from __future__ import annotations
+
+from typing import Callable, TYPE_CHECKING
+
 import sublime
-from LSP.plugin import Session
-from LSP.plugin.core.types import Callable
 from LSP.plugin.core.views import location_to_encoded_filename
 
 from .constants import SETTING_ENABLE_NULL_ANALYSIS
 from .protocol import FeatureStatus
 from .utils import set_lsp_project_setting
+
+if TYPE_CHECKING:
+    from LSP.plugin import Session
 
 
 def handle_client_command(

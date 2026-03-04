@@ -4,21 +4,24 @@ Protocol extensions by JDTLS.
 https://github.com/redhat-developer/vscode-java/blob/master/src/protocol.ts
 """
 
-from LSP.plugin.core.protocol import Command, IntEnum, MessageType
-from LSP.plugin.core.typing import Any, List, NotRequired, TypedDict
+from __future__ import annotations
 
-ActionableNotification = TypedDict(
-    "ActionableNotification",
-    {
-        "severity": MessageType,
-        "message": str,
-        "data": NotRequired[Any],
-        "commands": NotRequired[List[Command]],
-    },
-)
-"""
-Called ActionableMessage in vscode extension.
-"""
+from enum import IntEnum
+from typing import Any, TypedDict, TYPE_CHECKING
+from typing_extensions import NotRequired
+
+
+if TYPE_CHECKING:
+    from LSP.protocol import Command, MessageType
+
+
+class ActionableNotification(TypedDict):
+    """Called ActionableMessage in vscode extension."""
+
+    severity: MessageType
+    message: str
+    data: NotRequired[Any]
+    commands: NotRequired[list[Command]]
 
 
 class FeatureStatus(IntEnum):
@@ -27,17 +30,16 @@ class FeatureStatus(IntEnum):
     automatic = 2
 
 
-StatusReport = TypedDict("StatusReport", {"message": str, "type": str})
+class StatusReport(TypedDict):
+    message: str
+    type: str
 
-ProgressReport = TypedDict(
-    "ProgressReport",
-    {
-        "id": NotRequired[str],
-        "task": str,
-        "subTask": NotRequired[str],
-        "status": str,
-        "workDone": int,
-        "totalWork": int,
-        "complete": bool,
-    },
-)
+
+class ProgressReport(TypedDict):
+    id: NotRequired[str]
+    task: str
+    subTask: NotRequired[str]
+    status: str
+    workDone: int
+    totalWork: int
+    complete: bool

@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import os
 import shutil
+from typing import TYPE_CHECKING
 
 import sublime
 import sublime_plugin
@@ -9,17 +12,20 @@ from . import installer
 from .constants import SESSION_NAME
 from .utils import LspJdtlsTextCommand
 
+if TYPE_CHECKING:
+    from LSP.plugin.core.protocol import ResponseError
+
 
 class LspJdtlsBuildWorkspace(LspJdtlsTextCommand):
-    def run_jdtls_command(self, edit, session: Session):
+    def run_jdtls_command(self, edit: sublime.Edit, session: Session) -> None:
         params = True
         session.send_request(
-            Request("java/buildWorkspace", params),
+            Request[bool, int]("java/buildWorkspace", params),
             self.on_response_async,
             self.on_error_async,
         )
 
-    def on_response_async(self, response):
+    def on_response_async(self, response: int) -> None:
         window = self.view.window()
         if window is None:
             return
@@ -32,12 +38,12 @@ class LspJdtlsBuildWorkspace(LspJdtlsTextCommand):
         elif response == 3:
             window.status_message("LSP-jdtls: Build cancelled")
 
-    def on_error_async(self, error):
+    def on_error_async(self, error: ResponseError) -> None:
         pass
 
 
 class JdtlsClearData(sublime_plugin.TextCommand):
-    def run(self, edit) -> None:
+    def run(self, edit: sublime.Edit) -> None:
         if sublime.ok_cancel_dialog(
             "Are you sure you want to clear " + installer.jdtls_data_path()
         ):

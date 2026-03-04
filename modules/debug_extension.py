@@ -1,21 +1,33 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+from typing_extensions import override
+
 from LSP.plugin import Notification, Session
-from LSP.plugin.core.protocol import ExecuteCommandParams  # noqa: F401
+from LSP.plugin.core.protocol import Error
+from LSP.protocol import ExecuteCommandParams, TextDocumentIdentifier
 
 from .utils import LspJdtlsTextCommand
 
+if TYPE_CHECKING:
+    import sublime
+
 
 class LspJdtlsRefreshWorkspace(LspJdtlsTextCommand):
-    def run_jdtls_command(self, edit, session: Session):
-        command = {
+
+    @override
+    def run_jdtls_command(self, edit: sublime.Edit, session: Session) -> None:
+        command: ExecuteCommandParams = {
             "command": "vscode.java.resolveBuildFiles"
-        }  # type: ExecuteCommandParams
-        session.execute_command(command, False).then(
+        }
+        session.execute_command(command).then(
             lambda files: self._send_update_requests(session, files)
         )
 
-    def _send_update_requests(self, session: Session, files):
+    def _send_update_requests(self, session: Session, files: list[str] | Error | None) -> None:
+        if not files or isinstance(files, Error):
+            return
         for uri in files:
-            params = {"uri": uri}
             session.send_notification(
-                Notification("java/projectConfigurationUpdate", params)
+                Notification[TextDocumentIdentifier]("java/projectConfigurationUpdate", {"uri": uri})
             )

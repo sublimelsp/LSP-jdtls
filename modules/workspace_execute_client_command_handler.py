@@ -3,8 +3,11 @@
 # See https://github.com/microsoft/vscode-java-test/tree/main/src/commands
 # See https://github.com/redhat-developer/vscode-java/blob/master/src/commands.ts
 
+from __future__ import annotations
+
+from typing import Any, Callable
+
 from LSP.plugin import Response, Session
-from LSP.plugin.core.types import Any, Callable, List, Optional
 
 from .quick_input_panel import QuickSelect, QuickTextInput, SelectableItem
 
@@ -55,7 +58,7 @@ def _ask_client_for_choice(
     items,
     multi_select: bool,
 ):
-    def on_selection_done(selection: Optional[List[SelectableItem]]):
+    def on_selection_done(selection: list[SelectableItem] | None):
         if not selection:
             response_callback(None)
         else:
@@ -93,7 +96,7 @@ def _ask_client_for_input(
     caption: str,
     initial_text: str,
 ):
-    def on_done(answer: Optional[str]):
+    def on_done(answer: str | None):
         response_callback(answer)
 
     QuickTextInput(None, caption, initial_text).show().then(on_done)

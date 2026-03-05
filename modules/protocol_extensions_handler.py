@@ -58,7 +58,7 @@ progress_reports: dict[str, str] = {}
 
 
 def language_progressReport(session: Session, params: ProgressReport) -> None:
-    key = params["id"] if "id" in params else "jdtls-status-dummy-key"
+    key = params.get("id", "jdtls-status-dummy-key")
     progress_reports[key] = "{}% {}".format(params["workDone"] / params["totalWork"] * 100, params["task"])
     _update_config_status_async(session)
     if params["complete"]:

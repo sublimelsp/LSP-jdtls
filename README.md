@@ -5,7 +5,7 @@ This is a helper package that manages and downloads the [Eclipse JDT language se
 To use this package, you must have:
 
 - The [LSP](https://packagecontrol.io/packages/LSP) package.
-- A Java SDK (>= 17).
+- A Java SDK (>= 21).
 - It's recommended to have `JAVA_HOME` defined in your environment variables. Otherwise, specify `java.home` in the plugin settings.
 
 

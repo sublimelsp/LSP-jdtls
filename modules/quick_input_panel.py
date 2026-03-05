@@ -9,12 +9,17 @@ QuickTextInput(...).show().then( do_something_with_text )
 Inspired by https://github.com/daveleroy/sublime_debugger/blob/master/modules/ui/input.py
 """
 
+from __future__ import annotations
+
+from typing import Any, Callable, final
+from typing_extensions import override
+
 import sublime
 import sublime_plugin
-from LSP.plugin.core.promise import Promise
-from LSP.plugin.core.typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from LSP.plugin.core.promise import Promise, PackagedTask
 
 
+@final
 class SelectableItem:
     def __init__(
         self,
@@ -22,7 +27,7 @@ class SelectableItem:
         value: Any,
         details: str = "",
         annotation: str = "",
-        kind: Tuple[int, str, str] = sublime.KIND_AMBIGUOUS,
+        kind: tuple[int, str, str] = sublime.KIND_AMBIGUOUS,
         on_select_confirmed: Callable[[], None] = lambda: None,
     ):
         """
@@ -43,6 +48,7 @@ class SelectableItem:
         self.on_select_confirmed = on_select_confirmed
 
 
+@final
 class QuickSelect:
     """
     This class can be used to query a selection from the user.
@@ -50,8 +56,8 @@ class QuickSelect:
 
     def __init__(
         self,
-        window: Optional[sublime.Window],
-        items: List[SelectableItem],
+        window: sublime.Window | None,
+        items: list[SelectableItem],
         preselect_index: int = 0,
         placeholder: str = "",
         multi_select: bool = False,
@@ -63,16 +69,20 @@ class QuickSelect:
         self._multi_select = multi_select
 
         # Used here as Future
-        self._promise = Promise(
-            lambda _: None
-        )  # type: Promise[Optional[List[SelectableItem]]]
+        packaged_task: PackagedTask[list[SelectableItem] | None] = Promise.packaged_task()
+        self._promise = packaged_task[0]
+        self._resolve_promise = packaged_task[1]
 
-    def show(self) -> Promise[Optional[List[SelectableItem]]]:
+    def resolve_promise(self, value: list[SelectableItem]) -> None:
+        self._resolve_promise(value)
+
+    def show(self) -> Promise[list[SelectableItem] | None]:
         JdtlsInputCommand.enqueue(_ListInputHandler(self))
         JdtlsInputCommand.show(self._window)
         return self._promise
 
 
+@final
 class QuickTextInput:
     """
     This class can be used to query text from the user.
@@ -80,72 +90,88 @@ class QuickTextInput:
 
     def __init__(
         self,
-        window: Optional[sublime.Window],
+        window: sublime.Window | None,
         placeholder: str = "",
         initial_text: str = "",
-        validate: Optional[Callable[[str], bool]] = None,
-        preview: Optional[Callable[[str], Union[str, sublime.Html]]] = None,
-    ):
+        validate: Callable[[str], bool] | None = None,
+        preview: Callable[[str], str | sublime.Html] | None = None,
+    ) -> None:
         self._window = window or sublime.active_window()
         self._placeholder = placeholder
         self._initial_text = initial_text
         self._validate = validate
         self._preview = preview
-        # Used here as Future
-        self._promise = Promise(lambda _: None)  # type: Promise[Optional[str]]
+        packaged_task: PackagedTask[str | None] = Promise.packaged_task()
+        self._promise = packaged_task[0]
+        self._resolve_promise = packaged_task[1]
 
-    def show(self) -> Promise[Optional[str]]:
+    def resolve_promise(self, value: str | None) -> None:
+        self._resolve_promise(value)
+
+    def show(self) -> Promise[str | None]:
         JdtlsInputCommand.enqueue(_TextInputHandler(self))
         JdtlsInputCommand.show(self._window)
         return self._promise
 
 
+@final
 class _TextInputHandler(sublime_plugin.TextInputHandler):
-    def __init__(self, context: QuickTextInput):
+    def __init__(self, context: QuickTextInput) -> None:
         self.context = context
 
+    @override
     def placeholder(self) -> str:
         return self.context._placeholder
 
+    @override
     def initial_text(self) -> str:
         return self.context._initial_text
 
+    @override
     def confirm(self, v: str) -> None:
-        self.context._promise._do_resolve(v)
+        self.context.resolve_promise(v)
 
+    @override
     def cancel(self) -> None:
-        self.context._promise._do_resolve(None)
+        self.context.resolve_promise(None)
 
+    @override
     def validate(self, text: str) -> bool:
         return self.context._validate(text) if self.context._validate else True
 
-    def preview(self, text: str) -> Union[str, sublime.Html]:
+    @override
+    def preview(self, text: str) -> str | sublime.Html:
         return self.context._preview(text) if self.context._preview else ""
 
 
+@final
 class _ListInputHandler(sublime_plugin.ListInputHandler):
     """
     The ListInputHandler that is returned from the dummy command "JdtlsQuickSelectCommand".
     """
 
-    def __init__(self, context: QuickSelect):
+    def __init__(self, context: QuickSelect) -> None:
         self.context = context
         self.finished = False
-        self.selected_indices_stack = []  # type: List[int]
+        self.selected_indices_stack: list[int] = []
 
+    @override
     def placeholder(self) -> str:
         return self.context._placeholder
 
+    @override
     def initial_text(self) -> str:
         return ""
 
-    def initial_selection(self):
+    @override
+    def initial_selection(self) -> list[tuple[int, int]]:
         return []
 
-    def list_items(self):
+    @override
+    def list_items(self) -> tuple[list[sublime.ListInputItem], int]:
         # Value is set to an positive index to self.context.items
         # Value is -1 to signal "confirm"
-        list_input_items = []
+        list_input_items: list[sublime.ListInputItem] = []
 
         if self.context._multi_select:
             list_input_items.append(
@@ -172,6 +198,7 @@ class _ListInputHandler(sublime_plugin.ListInputHandler):
             preselect_index += 1
         return (list_input_items, preselect_index)
 
+    @override
     def cancel(self) -> None:
         if self.selected_indices_stack:
             self.selected_indices_stack.pop()
@@ -180,6 +207,7 @@ class _ListInputHandler(sublime_plugin.ListInputHandler):
             # calling _hide_overlay directly crashes sublime :(
             sublime.set_timeout(lambda: _hide_overlay(self.context._window))
 
+    @override
     def confirm(self, v: int) -> None:
         if v == -1:
             self.finished = True
@@ -197,9 +225,10 @@ class _ListInputHandler(sublime_plugin.ListInputHandler):
                 selection.append(item)
             self.context._promise._do_resolve(selection)
 
+    @override
     def next_input(
-        self, args: Dict[str, Any]
-    ) -> Optional[sublime_plugin.CommandInputHandler]:
+        self, args: dict[str, Any]
+    ) -> sublime_plugin.CommandInputHandler | None:
         return None if self.finished else self
 
 
@@ -209,12 +238,12 @@ class JdtlsInputCommand(sublime_plugin.WindowCommand):
     """
 
     # TODO: Is locking necessary?
-    __pending_list_input_handler = (
+    __pending_list_input_handler: sublime_plugin.CommandInputHandler | None = (
         None
-    )  # type: Optional[sublime_plugin.CommandInputHandler]
+    )
 
     @classmethod
-    def _consume_pending(cls) -> Optional[sublime_plugin.CommandInputHandler]:
+    def _consume_pending(cls) -> sublime_plugin.CommandInputHandler | None:
         """
         Returns a pending quick select and sets it to none.
         """
@@ -227,13 +256,13 @@ class JdtlsInputCommand(sublime_plugin.WindowCommand):
         return cls.__pending_list_input_handler is not None
 
     @classmethod
-    def enqueue(cls, input_handler: sublime_plugin.CommandInputHandler):
+    def enqueue(cls, input_handler: sublime_plugin.CommandInputHandler) -> None:
         if cls._has_pending():
             raise ValueError("There is already an input handler pending.")
         cls.__pending_list_input_handler = input_handler
 
     @classmethod
-    def show(cls, window: sublime.Window):
+    def show(cls, window: sublime.Window) -> None:
         if not cls._has_pending():
             raise ValueError("There is no command input handler pending")
         # First hide all open overlays
@@ -247,6 +276,7 @@ class JdtlsInputCommand(sublime_plugin.WindowCommand):
             },
         )
 
+    @override
     def input(self, args) -> sublime_plugin.CommandInputHandler:
         pending_list_input_handler = self.__class__._consume_pending()
 
@@ -255,15 +285,17 @@ class JdtlsInputCommand(sublime_plugin.WindowCommand):
 
         return pending_list_input_handler
 
-    def run(self, **args):
+    @override
+    def run(self, **args) -> None:
         # This is a dummy command that is just used to get the CommandInputHandler shown.
         ...
 
-    def is_visible(self):
+    @override
+    def is_visible(self) -> bool:
         return self.__class__._has_pending()
 
 
-def _hide_overlay(window):
+def _hide_overlay(window: sublime.Window) -> None:
     window.run_command(
         "show_overlay",
         {

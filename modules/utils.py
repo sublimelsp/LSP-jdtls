@@ -1,12 +1,19 @@
+from __future__ import annotations
+
+from typing import Any, Callable, TYPE_CHECKING
+from typing_extensions import override
+
 import sublime
+
 from LSP.plugin import AbstractPlugin, LspTextCommand, Session, parse_uri
-from LSP.plugin.core.typing import Any, Callable, List, Optional
 
 from .constants import SESSION_NAME, SETTINGS_FILENAME
-from .text_extension_protocol import IJavaTestItem
+
+if TYPE_CHECKING:
+    from .text_extension_protocol import IJavaTestItem
 
 
-def set_lsp_project_setting(window: sublime.Window, setting: str, value: Any):
+def set_lsp_project_setting(window: sublime.Window, setting: str, value: Any) -> None:
     if not window.project_file_name():
         sublime.message_dialog(
             "A sublime-project is required to save project settings."
@@ -33,16 +40,16 @@ def get_settings() -> sublime.Settings:
 
 def sublime_debugger_available() -> bool:
     settings_names = ["debugger.sublime-settings", "Debugger.sublime-settings"]
-    return any([any([file.endswith(name) for file in sublime.find_resources(name)]) for name in settings_names])
+    return any(any(file.endswith(name) for file in sublime.find_resources(name)) for name in settings_names)
 
 
-def open_and_focus_uri(window: sublime.Window, uri: str):
+def open_and_focus_uri(window: sublime.Window, uri: str) -> None:
     # Replace that with session.open_uri_async once that does also focus an open view.
     _, file_name = parse_uri(uri)
     window.open_file(file_name)
 
 
-def flatten_test_items(test_items: List[IJavaTestItem]) -> List[IJavaTestItem]:
+def flatten_test_items(test_items: list[IJavaTestItem]) -> list[IJavaTestItem]:
     test_list = []
     for item in test_items:
         test_list.append(item)
@@ -51,7 +58,7 @@ def flatten_test_items(test_items: List[IJavaTestItem]) -> List[IJavaTestItem]:
     return test_list
 
 
-def filter_lines(string: str, patterns: List[str]):
+def filter_lines(string: str, patterns: list[str]) -> str:
     return "".join(
         line
         for line in string.splitlines(True)
@@ -67,8 +74,8 @@ def add_notification_handler(
     The handler must accept a Session and the notification parameters.
     """
 
-    def decorator(cls):
-        def handle(self: AbstractPlugin, params: Any):
+    def decorator(cls) -> None:
+        def handle(self: AbstractPlugin, params: Any) -> None:
             session = self.weaksession()
             if not session:
                 return
@@ -99,7 +106,7 @@ def add_request_handler(request: str, handler: Callable[[Session, Any, int], Non
     return decorator
 
 
-def view_for_uri_async(session: Session, uri: Optional[str]) -> Optional[sublime.View]:
+def view_for_uri_async(session: Session, uri: str | None) -> sublime.View | None:
     """Returns a view matching the uri that is attached to the given session.
     Only safe to use in the async thread.
     """
@@ -110,13 +117,14 @@ def view_for_uri_async(session: Session, uri: Optional[str]) -> Optional[sublime
 
 
 class LspJdtlsTextCommand(LspTextCommand):
-    session_name = SESSION_NAME
+    session_name: str = SESSION_NAME
 
-    def run(self, edit, **args):
+    @override
+    def run(self, edit, **args) -> None:
         session = self.session_by_name(SESSION_NAME)
         if not session:
             return
         self.run_jdtls_command(edit, session, **args)
 
-    def run_jdtls_command(self, edit, session: Session, **args):
+    def run_jdtls_command(self, edit, session: Session, **args) -> None:
         ...

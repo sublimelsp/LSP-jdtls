@@ -1,25 +1,24 @@
-from LSP.plugin.core.protocol import Location, Range
-from LSP.plugin.core.typing import IntEnum, List, NotRequired, Optional, TypedDict
+from __future__ import annotations
 
-ITestNavigationItem = TypedDict(
-    "ITestNavigationItem",
-    {
-        "simpleName": str,
-        "fullyQualifiedName": str,
-        "uri": str,
-        "relevance": int,
-        "outOfBelongingProject": bool,
-    },
-)
+from enum import IntEnum
+from typing import TypedDict, TYPE_CHECKING
+from typing_extensions import NotRequired
+
+if TYPE_CHECKING:
+    from LSP.protocol import Location, Range
 
 
-ITestNavigationResult = TypedDict(
-    "ITestNavigationResult",
-    {
-        "items": List[ITestNavigationItem],
-        "location": Location,
-    },
-)
+class ITestNavigationItem(TypedDict):
+    simpleName: str
+    fullyQualifiedName: str
+    uri: str
+    relevance: int
+    outOfBelongingProject: bool
+
+
+class ITestNavigationResult(TypedDict):
+    items: list[ITestNavigationItem]
+    location: Location
 
 
 class TestKind(IntEnum):
@@ -40,37 +39,26 @@ class TestLevel(IntEnum):
     Invocation = 7
 
 
-IJavaTestItem = TypedDict(
-    "IJavaTestItem",
-    {
-        "children": NotRequired[List["IJavaTestItem"]],
-        "uri": Optional[str],
-        "range": Optional[Range],
-        "jdtHandler": str,
-        "fullName": str,
-        "label": str,
-        "id": str,
-        "projectName": str,
-        "testKind": TestKind,
-        "testLevel": TestLevel,
-        "uniqueId": NotRequired[str],
-        # Identifies a single invocation of a parameterized test.
-        # Invocations for which a re-run is possible store their own uniqueId which is provided as part of the result.
-        # Methods may store it in order to specify a certain parameter-set to be used when running again.
-        "natureIds": NotRequired[List[str]],
-        # Optional fields for projects
-    },
-)
+class IJavaTestItem(TypedDict):
+    children: NotRequired[list[IJavaTestItem]]
+    uri: str | None
+    range: Range | None
+    jdtHandler: str
+    fullName: str
+    label: str
+    id: str
+    projectName: str
+    testKind: TestKind
+    testLevel: TestLevel
+    uniqueId: NotRequired[str]
+    natureIds: NotRequired[list[str]]
 
-IJUnitLaunchArguments = TypedDict(
-    "IJUnitLaunchArguments",
-    {
-        "workingDirectory": str,
-        "mainClass": str,
-        "projectName": str,
-        "classpath": List[str],
-        "modulepath": List[str],
-        "vmArguments": List[str],
-        "programArguments": List[str],
-    },
-)
+
+class IJUnitLaunchArguments(TypedDict):
+    workingDirectory: str
+    mainClass: str
+    projectName: str
+    classpath: list[str]
+    modulepath: list[str]
+    vmArguments: list[str]
+    programArguments: list[str]

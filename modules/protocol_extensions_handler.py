@@ -3,30 +3,32 @@ Handler for JDTLS protocol extensions.
 
 See https://github.com/redhat-developer/vscode-java/blob/master/src/standardLanguageClient.ts
 """
-import sublime
-from LSP.plugin import Session
-from LSP.plugin.core.protocol import (
-    Command,
-    ExecuteCommandParams,  # noqa: F401
-)
-from LSP.plugin.core.typing import Optional
 
-from .protocol import ActionableNotification, ProgressReport, StatusReport
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+import sublime
+
 from .quick_input_panel import QuickSelect, SelectableItem
+
+if TYPE_CHECKING:
+    from .protocol import ActionableNotification, ProgressReport, StatusReport
+    from LSP.plugin import Session
+    from LSP.protocol import Command, ExecuteCommandParams
 
 
 def language_actionableNotification(
     session: Session, notification: ActionableNotification
-):
-    def run_command(command: Optional[Command]):
+) -> None:
+    def run_command(command: Command | None) -> None:
         if not command:
             return
-        params = {"command": command["command"]}  # type: ExecuteCommandParams
+        params: ExecuteCommandParams = {"command": command["command"]}
         if "arguments" in command:
             params["arguments"] = command["arguments"]
-        session.execute_command(params, False)
+        session.execute_command(params)
 
-    command = None  # type: Optional[Command]
+    command: Command | None = None
     if "commands" not in notification or len(notification["commands"]) == 0:
         sublime.message_dialog(notification["message"])
     elif len(notification["commands"]) == 1:
@@ -52,10 +54,10 @@ def language_actionableNotification(
     run_command(command)
 
 
-progress_reports = dict()  # type: dict[str, str]
+progress_reports: dict[str, str] = {}
 
 
-def language_progressReport(session: Session, params: ProgressReport):
+def language_progressReport(session: Session, params: ProgressReport) -> None:
     key = params["id"] if "id" in params else "jdtls-status-dummy-key"
     progress_reports[key] = "{}% {}".format(params["workDone"] / params["totalWork"] * 100, params["task"])
     _update_config_status_async(session)

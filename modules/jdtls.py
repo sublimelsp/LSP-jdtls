@@ -10,7 +10,6 @@ import sublime
 from urllib.parse import urlparse
 from LSP.plugin import (
     AbstractPlugin,
-    DottedDict,
     Request,
     WorkspaceFolder,
     register_plugin,
@@ -260,21 +259,6 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
                         JDTLS_CONFIG_TO_SUBLIME_SETTING[params["section"]], None
                     )
         return configuration
-
-    @override
-    def on_settings_changed(self, settings: DottedDict) -> None:
-        # Workaround for https://github.com/eclipse/eclipse.jdt.ls/issues/2365
-        session = self.weaksession()
-        if session:
-            registration_id = "lsp-jdtls-inlayhint-workaround"
-            capability_path = "inlayHintProvider"
-            registration_path = capability_path + ".id"
-            options = {"resolveProvider": False}
-            session.capabilities.register(
-                registration_id, capability_path, registration_path, options
-            )
-            for sv in session.session_views_async():
-                sv.on_capability_added_async(registration_id, capability_path, options)
 
 
 def plugin_loaded() -> None:

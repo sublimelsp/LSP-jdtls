@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Callable, TYPE_CHECKING
-from typing_extensions import override
+from typing import TYPE_CHECKING, Callable
 
 import sublime
 from LSP.plugin import Session, parse_uri, uri_from_view
@@ -11,6 +10,7 @@ from LSP.plugin.core.constants import KIND_CLASS, KIND_METHOD
 from LSP.plugin.core.edit import WorkspaceEditSummary, parse_workspace_edit
 from LSP.plugin.core.protocol import Error
 from LSP.plugin.core.views import first_selection_region, offset_to_point
+from typing_extensions import override
 
 from .constants import SESSION_NAME
 from .installer import vscode_plugin_path
@@ -186,9 +186,7 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
         )
 
     def get_test_name(self, test_item: IJavaTestItem) -> str:
-        if test_item["testKind"] == TestKind.TestNG:
-            return test_item["fullName"]
-        elif test_item["testLevel"] == TestLevel.Class:
+        if test_item["testKind"] == TestKind.TestNG or test_item["testLevel"] == TestLevel.Class:
             return test_item["fullName"]
         else:
             return test_item["jdtHandler"]

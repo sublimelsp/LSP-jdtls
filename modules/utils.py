@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Callable, TYPE_CHECKING
-from typing_extensions import override
+from typing import TYPE_CHECKING, Any, Callable
 
 import sublime
-
 from LSP.plugin import AbstractPlugin, LspTextCommand, Session, parse_uri
+from typing_extensions import override
 
 from .constants import SESSION_NAME, SETTINGS_FILENAME
 

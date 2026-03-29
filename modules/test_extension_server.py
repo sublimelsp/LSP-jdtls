@@ -7,9 +7,9 @@ import threading
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Literal, TypedDict, cast, final
-from typing_extensions import NotRequired, override
 
 import sublime
+from typing_extensions import NotRequired, override
 
 from .utils import filter_lines, get_settings
 
@@ -451,11 +451,7 @@ class _JunitResultsHandler(_TestResultsHandler):
                     + "\n"
                 )
 
-        elif header == EclipseTestRunnerMessageIds.TEST_FAILED:
-            self.current_test = container.get_by_id(int(args[0]))
-            if self.current_test:
-                self.current_test.set_failed()
-        elif header == EclipseTestRunnerMessageIds.TEST_ERROR:
+        elif header in {EclipseTestRunnerMessageIds.TEST_FAILED, EclipseTestRunnerMessageIds.TEST_ERROR}:
             self.current_test = container.get_by_id(int(args[0]))
             if self.current_test:
                 self.current_test.set_failed()
@@ -473,11 +469,7 @@ class _JunitResultsHandler(_TestResultsHandler):
             self.line_consumer = self.current_test.append_actual
         elif header == EclipseTestRunnerMessageIds.EXPECTED_START and self.current_test:
             self.line_consumer = self.current_test.append_expected
-        elif header == EclipseTestRunnerMessageIds.TRACE_END:
-            self.line_consumer = None
-        elif header == EclipseTestRunnerMessageIds.ACTUAL_END:
-            self.line_consumer = None
-        elif header == EclipseTestRunnerMessageIds.EXPECTED_END:
+        elif header in {EclipseTestRunnerMessageIds.TRACE_END, EclipseTestRunnerMessageIds.ACTUAL_END, EclipseTestRunnerMessageIds.EXPECTED_END}:
             self.line_consumer = None
         elif header == EclipseTestRunnerMessageIds.TEST_RUN_END:
             # runtime_ms = int(args[0])

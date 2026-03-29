@@ -7,9 +7,9 @@ https://github.com/redhat-developer/vscode-java/blob/master/src/protocol.ts
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import Any, TypedDict, TYPE_CHECKING
-from typing_extensions import NotRequired
+from typing import TYPE_CHECKING, Any, TypedDict
 
+from typing_extensions import NotRequired
 
 if TYPE_CHECKING:
     from LSP.protocol import Command, MessageType

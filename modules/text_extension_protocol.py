@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import TypedDict, TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
+
 from typing_extensions import NotRequired
 
 if TYPE_CHECKING:

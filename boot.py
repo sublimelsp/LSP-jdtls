@@ -11,4 +11,4 @@ def reload_plugin() -> None:
 
 reload_plugin()
 
-from .modules import *  # noqa: E402, F403
+from .modules import *

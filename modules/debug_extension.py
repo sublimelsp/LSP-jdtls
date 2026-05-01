@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from typing_extensions import override
 
 from LSP.plugin import Notification, Session
 from LSP.plugin.core.protocol import Error
 from LSP.protocol import ExecuteCommandParams, TextDocumentIdentifier
+from typing_extensions import override
 
 from .utils import LspJdtlsTextCommand
 

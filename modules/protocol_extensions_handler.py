@@ -7,14 +7,16 @@ See https://github.com/redhat-developer/vscode-java/blob/master/src/standardLang
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+
 import sublime
 
 from .quick_input_panel import QuickSelect, SelectableItem
 
 if TYPE_CHECKING:
-    from .protocol import ActionableNotification, ProgressReport, StatusReport
     from LSP.plugin import Session
     from LSP.protocol import Command, ExecuteCommandParams
+
+    from .protocol import ActionableNotification, ProgressReport, StatusReport
 
 
 def language_actionableNotification(

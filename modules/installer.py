@@ -6,9 +6,9 @@ import stat
 import tarfile
 import tempfile
 import zipfile
-from urllib.request import urlopen
 from pathlib import Path
 from typing import Callable
+from urllib.request import urlopen
 
 import sublime
 from LSP.plugin.core.constants import ST_STORAGE_PATH

@@ -3,11 +3,10 @@ from __future__ import annotations
 import json
 import os
 import re
-from typing import Any, Callable, TYPE_CHECKING
-from typing_extensions import override
+from typing import TYPE_CHECKING, Any, Callable
+from urllib.parse import urlparse
 
 import sublime
-from urllib.parse import urlparse
 from LSP.plugin import (
     AbstractPlugin,
     Request,
@@ -17,6 +16,7 @@ from LSP.plugin import (
 )
 from LSP.plugin.core.views import text_document_identifier
 from LSP.protocol import TextDocumentIdentifier
+from typing_extensions import override
 
 from . import installer
 from .constants import (

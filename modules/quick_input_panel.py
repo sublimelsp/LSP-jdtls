@@ -12,11 +12,12 @@ Inspired by https://github.com/daveleroy/sublime_debugger/blob/master/modules/ui
 from __future__ import annotations
 
 from typing import Any, Callable, final
-from typing_extensions import override
 
 import sublime
 import sublime_plugin
-from LSP.plugin.core.promise import Promise, PackagedTask
+from LSP.plugin import Promise
+from LSP.plugin.core.promise import PackagedTask
+from typing_extensions import override
 
 
 @final

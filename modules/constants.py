@@ -1,7 +1,7 @@
 # fmt: off
-LOMBOK_VERSION = "1.18.38"
+LOMBOK_VERSION = "1.18.46"
 LOMBOK_URL = "https://repo1.maven.org/maven2/org/projectlombok/lombok/{version}/lombok-{version}.jar"
-JDTLS_VERSION = "1.47.0"
+JDTLS_VERSION = "1.60.0"
 JDTLS_TAR_URL_FILE = "https://download.eclipse.org/jdtls/milestones/{version}/latest.txt"
 JDTLS_URL = "https://download.eclipse.org/jdtls/milestones/{version}/{tar}"
 VSCODE_PLUGINS = {

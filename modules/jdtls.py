@@ -12,9 +12,9 @@ from LSP.plugin import (
     Request,
     WorkspaceFolder,
     register_plugin,
+    text_document_identifier,
     unregister_plugin,
 )
-from LSP.plugin.core.views import text_document_identifier
 from LSP.protocol import TextDocumentIdentifier
 from typing_extensions import override
 

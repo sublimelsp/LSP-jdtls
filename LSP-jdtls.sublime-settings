@@ -28,7 +28,7 @@
         "-XX:GCTimeRatio=4",
         "-XX:AdaptiveSizePolicyWeight=90",
         "-Dsun.zip.disableMemoryMapping=true",
-        "-Xmx1G",
+        "-Xmx2G",
         "-Xms100m",
         "-jar",
         "${serverdir}/plugins/org.eclipse.equinox.launcher_${launcher_version}.jar",

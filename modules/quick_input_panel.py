@@ -15,8 +15,7 @@ from typing import Any, Callable, final
 
 import sublime
 import sublime_plugin
-from LSP.plugin import Promise
-from LSP.plugin.core.promise import PackagedTask
+from LSP.plugin import PackagedTask, Promise
 from typing_extensions import override
 
 

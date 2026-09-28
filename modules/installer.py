@@ -11,7 +11,7 @@ from typing import Callable
 from urllib.request import urlopen
 
 import sublime
-from LSP.plugin.core.constants import ST_STORAGE_PATH
+from LSP.plugin import ST_STORAGE_PATH
 
 from .constants import (
     DATA_DIR,

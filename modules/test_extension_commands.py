@@ -265,7 +265,7 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
         if window:
             window.run_command(
                 "debugger",
-                {"action": "open_and_start", "configuration": debugger_config},
+                {"action": "start", "configuration": debugger_config},
             )
 
     def get_test_ng_args(

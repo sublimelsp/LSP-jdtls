@@ -1,3 +1,5 @@
+.DS_Store
 jdt-language-server-*.tar.gz
 out/
 pyrightconfig.json
+__pycache__/

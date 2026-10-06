@@ -26,6 +26,7 @@ class TestKind(IntEnum):
     JUnit5 = 0
     JUnit = 1
     TestNG = 2
+    JUnit6 = 3
     Unknown = 100  # Called None in the VSCode extension
 
 

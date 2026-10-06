@@ -142,6 +142,8 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
     @classmethod
     def _insert_bundles(cls, configuration: ClientConfig):
         bundles = configuration.init_options.get("bundles") or []
+        # Skip jars that jdtls already ships (e.g. ASM) to avoid duplicate bundle errors
+        server_jars = set(os.listdir(os.path.join(installer.jdtls_path(), "plugins")))
         for plugin in VSCODE_PLUGINS:
             ext_path = installer.vscode_plugin_extension_path(plugin)
             with open(os.path.join(ext_path, "package.json"), "r") as package_json:
@@ -151,6 +153,8 @@ class EclipseJavaDevelopmentTools(AbstractPlugin):
                     .get("javaExtensions", [])
                 )
                 for jar in jars:
+                    if os.path.basename(jar) in server_jars:
+                        continue
                     abspath = os.path.abspath(
                         os.path.normpath(os.path.join(ext_path, jar))
                     )

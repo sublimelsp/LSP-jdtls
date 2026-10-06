@@ -45,6 +45,15 @@ The server caches workspace specific information. When this data is corrupted th
 
 Run the command `LSP-jdtls: Clear data` from the command palette and re-enable the server using the command `LSP: Enable Language Server in Project`.
 
+### Running tests fails with "LSP-jdtls must be installed via package control"
+The Java adapter of [Debugger](https://github.com/daveleroy/sublime_debugger) only starts when both LSP and LSP-jdtls are installed via Package Control. If you installed either of them manually (e.g. cloned or symlinked into the `Packages` folder), list it in `installed_packages` in the Debugger settings (`Preferences: Debugger Settings` from the command palette):
+
+```jsonc
+{
+    "installed_packages": ["LSP", "LSP-jdtls"],
+}
+```
+
 ## Licenses
 
 - The [Java Debug Plugin](https://github.com/microsoft/java-debug) is licensed under [Eclipse Public License 1.0](https://github.com/Microsoft/java-debug/blob/master/LICENSE.txt).

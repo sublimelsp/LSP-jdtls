@@ -12,7 +12,7 @@ VSCODE_PLUGINS = {
     },
     "vscode-java-test": {
         "url": "https://open-vsx.org/api/vscjava/vscode-java-test/{version}/file/vscjava.vscode-java-test-{version}.vsix",
-        "version": "0.43.1",
+        "version": "0.46.0",
         "extension_path": "extension"
     },
     "vscode-java-decompiler": {  # https://github.com/dgileadi/vscode-java-decompiler/issues/17

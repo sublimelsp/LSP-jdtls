@@ -229,15 +229,16 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
             "noDebug": False,
         }
 
-        if (
-            test_item["testKind"] == TestKind.JUnit5
-            or test_item["testKind"] == TestKind.JUnit
-        ):
+        if test_item["testKind"] in (TestKind.JUnit, TestKind.JUnit5, TestKind.JUnit6):
             server = JunitResultsServer()
 
             # The port in launch_args is a placeholder. (See vscode-java-test)
-            port_idx = launch_args["programArguments"].index("-port") + 1
-            launch_args["programArguments"][port_idx] = str(server.get_port())
+            program_args = launch_args["programArguments"]
+            port = str(server.get_port())
+            if "-port" in program_args[:-1]:
+                program_args[program_args.index("-port") + 1] = port
+            else:
+                program_args += ["-port", port]
 
             debugger_config["args"] = " ".join(launch_args["programArguments"])
             debugger_config["mainClass"] = launch_args["mainClass"]
@@ -264,7 +265,7 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
         if window:
             window.run_command(
                 "debugger",
-                {"action": "open_and_start", "configuration": debugger_config},
+                {"action": "start", "configuration": debugger_config},
             )
 
     def get_test_ng_args(

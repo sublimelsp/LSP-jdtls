@@ -23,7 +23,6 @@
         "-Declipse.product=org.eclipse.jdt.ls.core.product",
         "-Dfile.encoding=UTF-8",
         "-DwatchParentProcess=${watch_parent_process}",
-        "-noverify",
         "-XX:+UseParallelGC",
         "-XX:GCTimeRatio=4",
         "-XX:AdaptiveSizePolicyWeight=90",

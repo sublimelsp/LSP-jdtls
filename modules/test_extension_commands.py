@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import json
-import os
 from typing import TYPE_CHECKING, Callable
 
 import sublime
 from LSP.plugin import Error, Session, first_selection_region, offset_to_position, parse_uri, uri_from_view
 from LSP.plugin.core.constants import KIND_CLASS, KIND_METHOD
-from LSP.plugin.core.edit import WorkspaceEditSummary, parse_workspace_edit
+from LSP.plugin.core.edit import parse_workspace_edit
 from typing_extensions import override
 
 from .constants import SESSION_NAME
@@ -55,18 +54,19 @@ class LspJdtlsGenerateTests(LspJdtlsTextCommand):
 
             parsed_worspace_edit = parse_workspace_edit(workspace_edit)
 
-            def open_changed_file(result: WorkspaceEditSummary) -> None:
+            def handle_apply_edit() -> None:
+                session.apply_workspace_edit_async(workspace_edit).then(
+                    lambda _: open_changed_file()
+                )
+
+            def open_changed_file() -> None:
                 window = self.view.window()
                 if window and parsed_worspace_edit:
                     for uri in parsed_worspace_edit:
                         open_and_focus_uri(window, uri)
                         return
 
-            sublime.set_timeout_async(
-                lambda: session.apply_workspace_edit_async(workspace_edit).then(
-                    open_changed_file
-                )
-            )
+            sublime.set_timeout_async(handle_apply_edit)
 
         session.execute_command(command).then(_on_done)
 
@@ -178,7 +178,7 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
             ],
         }
         session.execute_command(command).then(
-            lambda result: print("Error fetching debug arguments: " + str(result))
+            lambda result: print(f"Error fetching debug arguments: {result}")
             if isinstance(result, Error)
             else self.resolve_debug_classpath(test_item, result["body"])
         )
@@ -195,10 +195,10 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
         session = self.session_by_name(SESSION_NAME)
         if not session:
             return
-        command = {
+        command: ExecuteCommandParams = {
             "command": "java.project.getClasspaths",
             "arguments": [uri_from_view(self.view), json.dumps({"scope": "test"})],
-        }  # type: ExecuteCommandParams
+        }
 
         def merge_classpaths(classpath: list[str]):
             launch_args["classpath"].extend(
@@ -246,9 +246,9 @@ class LspJdtlsTestCommand(LspJdtlsTextCommand):
         elif test_item["testKind"] == TestKind.TestNG:
             server = TestNgResultsServer()
 
-            jarpath = os.path.join(
-                vscode_plugin_path("vscode-java-test"),
-                "extension/server/com.microsoft.java.test.runner-jar-with-dependencies.jar",
+            jarpath = str(
+                vscode_plugin_path("vscode-java-test") /
+                "extension/server/com.microsoft.java.test.runner-jar-with-dependencies.jar"
             )
 
             debugger_config["mainClass"] = "com.microsoft.java.test.runner.Launcher"
@@ -325,14 +325,15 @@ class LspJdtlsRunTestAtCursor(LspJdtlsTestCommand):
         cursor_line = offset_to_position(self.view, region.b)['line']
 
         for test in flattened:
-            if test["testLevel"] == TestLevel.Method:
-                if test["range"] and test["range"]["start"]["line"] <= cursor_line:
-                    if (
-                        item is None
-                        or test["range"]["start"]["line"]
-                        > item["range"]["start"]["line"]
-                    ):  # item["range"] cannot be None
-                        item = test
+            if (
+                test["testLevel"] == TestLevel.Method
+                and test["range"] and test["range"]["start"]["line"] <= cursor_line
+                and (
+                    item is None
+                    or test["range"]["start"]["line"] > item["range"]["start"]["line"]
+                )
+            ):  # item["range"] cannot be None
+                item = test
 
         if item:
             then(item)

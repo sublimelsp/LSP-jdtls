@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import shutil
 from typing import TYPE_CHECKING
 
@@ -8,8 +7,8 @@ import sublime
 import sublime_plugin
 from LSP.plugin import Request, Session
 
-from . import installer
 from .constants import SESSION_NAME
+from .installer import jdtls_data_path
 from .utils import LspJdtlsTextCommand
 
 if TYPE_CHECKING:
@@ -45,10 +44,9 @@ class LspJdtlsBuildWorkspace(LspJdtlsTextCommand):
 class JdtlsClearData(sublime_plugin.TextCommand):
     def run(self, edit: sublime.Edit) -> None:
         if sublime.ok_cancel_dialog(
-            "Are you sure you want to clear " + installer.jdtls_data_path()
-        ):
-            if os.path.exists(installer.jdtls_data_path()):
-                shutil.rmtree(installer.jdtls_data_path())
-                self.view.run_command(
-                    "lsp_restart_server", {"config_name": SESSION_NAME}
-                )
+            f"Are you sure you want to clear {jdtls_data_path()}"
+        ) and jdtls_data_path().exists():
+            shutil.rmtree(jdtls_data_path())
+            self.view.run_command(
+                "lsp_restart_server", {"config_name": SESSION_NAME}
+            )

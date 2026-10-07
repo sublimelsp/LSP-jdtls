@@ -1,4 +1,6 @@
 # fmt: off
+from __future__ import annotations
+
 LOMBOK_VERSION = "1.18.46"
 LOMBOK_URL = "https://repo1.maven.org/maven2/org/projectlombok/lombok/{version}/lombok-{version}.jar"
 JDTLS_VERSION = "1.60.0"
@@ -23,7 +25,7 @@ VSCODE_PLUGINS = {
 }
 DATA_DIR = "data"
 INSTALL_DIR = "server"
-SESSION_NAME = "jdtls"
+SESSION_NAME = "LSP-jdtls"
 SETTINGS_FILENAME = "LSP-jdtls.sublime-settings"
 STORAGE_DIR = "LSP-jdtls"
 

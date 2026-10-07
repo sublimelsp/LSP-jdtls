@@ -18,32 +18,24 @@ from .constants import (
     INSTALL_DIR,
     JDTLS_TAR_URL_FILE,
     JDTLS_URL,
-    JDTLS_VERSION,
     LOMBOK_URL,
     LOMBOK_VERSION,
-    SETTINGS_FILENAME,
     STORAGE_DIR,
     VSCODE_PLUGINS,
 )
-
-
-def _jdtls_version() -> str:
-    version = sublime.load_settings(SETTINGS_FILENAME).get("version")
-    return version or JDTLS_VERSION
-
 
 # File Download / Extraction
 ############################
 
 
-def download_file(url: str, file_name: str) -> None:
+def download_file(url: str, file_name: str | Path) -> None:
     with urlopen(url) as response, open(file_name, "wb") as out_file:
         shutil.copyfileobj(response, out_file)
 
 
 def _extract_file(
     url: str,
-    path: str,
+    path: str | Path,
     open_function: Callable[[str], zipfile.ZipFile] | Callable[[str], tarfile.TarFile],
 ) -> None:
     with tempfile.TemporaryDirectory() as download_dir:
@@ -77,7 +69,7 @@ def _make_all_files_writable(root_dir: str) -> None:
                 print(f"Failed on {path}: {e}")
 
 
-def extract_zip(url: str, path: str) -> None:
+def extract_zip(url: str, path: str | Path) -> None:
     """
     Extracts the zip at `url` to `path`.
     The zip is extracted into `path` if it already exists.
@@ -85,7 +77,7 @@ def extract_zip(url: str, path: str) -> None:
     _extract_file(url, path, lambda x: zipfile.ZipFile(x, "r"))
 
 
-def extract_tar(url: str, path: str) -> None:
+def extract_tar(url: str, path: str | Path) -> None:
     """
     Extracts the tar at `url` to `path`.
     The tar is extracted into `path` if it already exists.
@@ -97,69 +89,65 @@ def extract_tar(url: str, path: str) -> None:
 ##################
 
 
-def storage_subpath() -> str:
-    return os.path.join(ST_STORAGE_PATH, STORAGE_DIR)
+def storage_subpath() -> Path:
+    return Path(ST_STORAGE_PATH, STORAGE_DIR)
 
 
-def install_path() -> str:
-    return os.path.join(storage_subpath(), INSTALL_DIR)
+def install_path() -> Path:
+    return storage_subpath() / INSTALL_DIR
 
 
-def jdtls_path() -> str:
-    return os.path.join(install_path(), f"jdtls-{_jdtls_version()}")
+def jdtls_path(jdtls_version: str) -> Path:
+    return install_path() / f"jdtls-{jdtls_version}"
 
 
-def jdtls_data_path() -> str:
-    return os.path.join(storage_subpath(), DATA_DIR)
+def jdtls_data_path() -> Path:
+    return storage_subpath() / DATA_DIR
 
 
-def vscode_plugin_path(plugin_name: str) -> str:
+def vscode_plugin_path(plugin_name: str) -> Path:
     plugin = VSCODE_PLUGINS[plugin_name]
-    return os.path.join(
-        install_path(),
-        "{name}-{version}".format(name=plugin_name, version=plugin["version"]),
-    )
+    return install_path() / f"{plugin_name}-{plugin['version']}"
 
 
-def vscode_plugin_extension_path(plugin_name: str) -> str:
+def vscode_plugin_extension_path(plugin_name: str) -> Path:
     """Path to the folder containing the package.json"""
     plugin = VSCODE_PLUGINS[plugin_name]
     subpath = plugin["extension_path"].format(version=plugin["version"])
-    return os.path.normpath(os.path.join(vscode_plugin_path(plugin_name), subpath))
+    return (vscode_plugin_path(plugin_name) / subpath).resolve()
 
 
-def lombok_jar_path() -> str:
-    return os.path.join(install_path(), f"lombok-{LOMBOK_VERSION}.jar")
+def lombok_jar_path() -> Path:
+    return install_path() / f"lombok-{LOMBOK_VERSION}.jar"
 
 
 # Install / Update
 ###################
 
 
-def needs_update_or_installation() -> bool:
-    result = not os.path.isdir(jdtls_path())
-    result |= not os.path.isfile(lombok_jar_path())
+def needs_update_or_installation(jdtls_version: str) -> bool:
+    result = not jdtls_path(jdtls_version).is_dir()
+    result |= not lombok_jar_path().is_file()
     for plugin in VSCODE_PLUGINS:
-        result |= not os.path.isdir(vscode_plugin_path(plugin))
+        result |= not vscode_plugin_path(plugin).is_dir()
     return result
 
 
-def install_or_update() -> None:
-    version = _jdtls_version()
+def install_or_update(jdtls_version: str) -> None:
     basedir = storage_subpath()
-    if os.path.isdir(basedir):
+    if basedir.is_dir():
         # Make writable before delete due to issue with latest jdt-*.tar.gz:
         # https://github.com/sublimelsp/LSP-jdtls/pull/58
         def del_rw(action, name, exc):
             os.chmod(name, stat.S_IWRITE)
             os.remove(name)
         shutil.rmtree(basedir, onerror=del_rw)
-    os.makedirs(basedir)
+    basedir.mkdir(parents=True)
 
     # fmt: off
     sublime.status_message("LSP-jdtls: downloading jdtls...")
-    with urlopen(JDTLS_TAR_URL_FILE.format(version=version)) as latest:
-        extract_tar(JDTLS_URL.format(version=version, tar=latest.read().decode().rstrip()), jdtls_path())
+    with urlopen(JDTLS_TAR_URL_FILE.format(version=jdtls_version)) as latest:
+        extract_tar(JDTLS_URL.format(version=jdtls_version, tar=latest.read().decode().rstrip()), jdtls_path(jdtls_version))
     sublime.status_message("LSP-jdtls: downloading lombok...")
     download_file(LOMBOK_URL.format(version=LOMBOK_VERSION), lombok_jar_path())
     for plugin_name, plugin in VSCODE_PLUGINS.items():

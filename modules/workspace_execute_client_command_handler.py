@@ -5,19 +5,17 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Any
 
-from LSP.plugin import Response, Session
+from LSP.plugin import Promise
+from LSP.protocol import ExecuteCommandParams
 
 from .quick_input_panel import QuickSelect, QuickTextInput, SelectableItem
 
 
-def workspace_executeClientCommand(session: Session, params, request_id) -> None:
-    """
-    Returns true if the command was handled.
-    """
+def workspace_executeClientCommand(params: ExecuteCommandParams) -> Promise[Any]:
     command = params["command"]
-    arguments = params["arguments"]
+    arguments: list[Any] = params.get("arguments") or []
 
     client_command_requests = {
         # vscode-java EXTENSION
@@ -30,42 +28,32 @@ def workspace_executeClientCommand(session: Session, params, request_id) -> None
     }
 
     if command in client_command_requests:
-
-        def send_response(params):
-            session.send_response(Response(request_id, params))
-
-        client_command_requests[command](session, send_response, *arguments)
+        return client_command_requests[command](*arguments)
+    return Promise.resolve(None)
 
 
 # HANDLERS
 ###############################
 
 
-## vscode-java EXTENSION
+# vscode-java EXTENSION
 
 
-def _reload_bundles(session: Session, response_callback: Callable[[Any], None]):
-    response_callback([])  # we do include all extensions from the start
+def _reload_bundles() -> Promise[list[str]]:
+    return Promise.resolve([])  # we do include all extensions from the start
 
 
-## vscode-java-test EXTENSION
+# vscode-java-test EXTENSION
 
 
-def _ask_client_for_choice(
-    session: Session,
-    response_callback: Callable[[Any], None],
-    placeholder: str,
-    items,
-    multi_select: bool,
-):
-    def on_selection_done(selection: list[SelectableItem] | None):
+def _ask_client_for_choice(placeholder: str, items: list[Any], multi_select: bool) -> Promise[Any]:
+
+    def on_selection_done(selection: list[SelectableItem] | None) -> Any:
         if not selection:
-            response_callback(None)
-        else:
-            if multi_select:
-                response_callback([x.value or x.label for x in selection])
-            else:
-                response_callback(selection[0].value or selection[0].label)
+            return None
+        if multi_select:
+            return [x.value or x.label for x in selection]
+        return selection[0].value or selection[0].label
 
     preselect_index = 0
     for i, item in enumerate(items):
@@ -81,7 +69,7 @@ def _ask_client_for_choice(
         )
         for x in items
     ]
-    QuickSelect(
+    return QuickSelect(
         None,
         qs_items,
         preselect_index=preselect_index,
@@ -90,13 +78,5 @@ def _ask_client_for_choice(
     ).show().then(on_selection_done)
 
 
-def _ask_client_for_input(
-    session: Session,
-    response_callback: Callable[[Any], None],
-    caption: str,
-    initial_text: str,
-):
-    def on_done(answer: str | None):
-        response_callback(answer)
-
-    QuickTextInput(None, caption, initial_text).show().then(on_done)
+def _ask_client_for_input(caption: str, initial_text: str) -> Promise[str | None]:
+    return QuickTextInput(None, caption, initial_text).show()

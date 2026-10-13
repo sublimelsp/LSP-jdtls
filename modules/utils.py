@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import sublime
-from LSP.plugin import AbstractPlugin, LspTextCommand, Session, parse_uri
+from LSP.plugin import LspTextCommand, Session, parse_uri
 from typing_extensions import override
 
 from .constants import SESSION_NAME, SETTINGS_FILENAME
@@ -65,46 +65,6 @@ def filter_lines(string: str, patterns: list[str]) -> str:
     )
 
 
-def add_notification_handler(
-    notification: str, handler: Callable[[Session, Any], None]
-):
-    """
-    Adds a handler for a notification.
-    The handler must accept a Session and the notification parameters.
-    """
-
-    def decorator(cls) -> None:
-        def handle(self: AbstractPlugin, params: Any) -> None:
-            session = self.weaksession()
-            if not session:
-                return
-            handler(session, params)
-
-        setattr(cls, "m_" + notification.replace("/", "_"), handle)
-        return cls
-
-    return decorator
-
-
-def add_request_handler(request: str, handler: Callable[[Session, Any, int], None]):
-    """
-    Adds a handler for a request.
-    The handler must accept a Session, the notification parameters and the request id.
-    """
-
-    def decorator(cls):
-        def handle(self: AbstractPlugin, params: Any, request_id: int):
-            session = self.weaksession()
-            if not session:
-                return
-            handler(session, params, request_id)
-
-        setattr(cls, "m_" + request.replace("/", "_"), handle)
-        return cls
-
-    return decorator
-
-
 def view_for_uri_async(session: Session, uri: str | None) -> sublime.View | None:
     """Returns a view matching the uri that is attached to the given session.
     Only safe to use in the async thread.
@@ -116,8 +76,6 @@ def view_for_uri_async(session: Session, uri: str | None) -> sublime.View | None
 
 
 class LspJdtlsTextCommand(LspTextCommand):
-    session_name: str = SESSION_NAME
-
     @override
     def run(self, edit, **args) -> None:
         session = self.session_by_name(SESSION_NAME)

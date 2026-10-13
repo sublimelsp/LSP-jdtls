@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/sublimelsp/lsp_smoke_test/v1/smoke.schema.json
+file: src/Sample.java
+# Without a build file, jdtls compiles the folder as an "invisible project" with src/ as the source root.
+expected_diagnostics:
+  source: Java
+  severity: 1
+  message: missingName cannot be resolved to a variable
+# Starting the server includes downloading jdtls and its extensions and indexing the JDK.
+diagnostics_timeout: 300

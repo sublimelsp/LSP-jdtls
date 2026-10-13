@@ -36,7 +36,7 @@ from .constants import (
     SETTING_PROGRESS_REPORT_ENABLED,
     VSCODE_PLUGINS,
 )
-from .installer import jdtls_data_path, jdtls_path, lombok_jar_path, vscode_plugin_extension_path
+from .installer import jdtls_path, jdtls_workspace_data_path, lombok_jar_path, vscode_plugin_extension_path
 from .protocol import ActionableNotification, FeatureStatus, ProgressReport, StatusReport
 from .protocol_extensions_handler import (
     language_actionableNotification,
@@ -50,6 +50,8 @@ from .utils import (
 from .workspace_execute_client_command_handler import workspace_executeClientCommand
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from LSP.plugin import ClientConfig
     from LSP.protocol import DocumentUri, ExecuteCommandParams
 
@@ -96,7 +98,7 @@ class EclipseJavaDevelopmentTools(LspPlugin):
             "watch_parent_process": "false" if sublime.platform() == "windows" else "true",
             "jdtls_platform": _jdtls_platform(),
             "serverdir": str(jdtls_path(jdtls_version)),
-            "datadir": str(jdtls_data_path()),
+            "datadir": str(cls._workspace_data_path(context)),
             "launcher_version": launcher_version,
         })
 
@@ -156,6 +158,12 @@ class EclipseJavaDevelopmentTools(LspPlugin):
 
     # Server configuration
     ######################
+
+    @classmethod
+    def _workspace_data_path(cls, context: OnPreStartContext) -> Path:
+        window = context.view.window()
+        project_file = window.project_file_name() if window else None
+        return jdtls_workspace_data_path(project_file, [folder.path for folder in context.workspace_folders])
 
     @classmethod
     def _jdtls_version(cls, configuration: ClientConfig) -> str:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import os
 import shutil
 import stat
@@ -103,6 +104,24 @@ def jdtls_path(jdtls_version: str) -> Path:
 
 def jdtls_data_path() -> Path:
     return storage_subpath() / DATA_DIR
+
+
+def jdtls_workspace_data_path(project_file: str | None, folders: list[str]) -> Path:
+    """
+    The data directory for a workspace, identified by its project file or, without one, by its folders.
+
+    jdtls requires a separate data directory per workspace. Sharing one between projects or
+    between concurrently running servers corrupts it (server exits with status code 13).
+    """
+    if project_file:
+        key = project_file
+        name = Path(project_file).stem
+    else:
+        folders = sorted(folders)
+        key = "\n".join(folders)
+        name = os.path.basename(folders[0]) if folders else "default"
+    digest = hashlib.sha256(key.encode("utf-8")).hexdigest()[:12]
+    return jdtls_data_path() / f"{name}-{digest}"
 
 
 def vscode_plugin_path(plugin_name: str) -> Path:

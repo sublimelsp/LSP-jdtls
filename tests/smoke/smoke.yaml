@@ -6,4 +6,5 @@ expected_diagnostics:
   severity: 1
   message: missingName cannot be resolved to a variable
 # Starting the server includes downloading jdtls and its extensions and indexing the JDK.
-diagnostics_timeout: 300
+# 240 is the maximum: UnitTesting stops a run after 300 seconds without output.
+diagnostics_timeout: 240

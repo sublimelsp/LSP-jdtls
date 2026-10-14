@@ -69,6 +69,34 @@ def _make_all_files_writable(root_dir: str) -> None:
                 print(f"Failed on {path}: {e}")
 
 
+def remove_tree(path: str | Path) -> None:
+    """
+    Removes a directory tree, including entries without the permissions needed to delete them.
+
+    The jdt.ls tarball contains read-only files and jdt.ls can leave behind directories that can't be listed
+    (e.g. `data/.metadata` with mode `d-w-------`), which `shutil.rmtree` alone fails to remove.
+    """
+    root = os.path.abspath(path)
+
+    def on_error(func: Callable[..., object], name: str, exc_info: object) -> None:
+        # On POSIX, removing an entry requires write access to its parent directory.
+        parent = os.path.dirname(name)
+        if os.path.commonpath([root, parent]) == root:
+            os.chmod(parent, stat.S_IRWXU)
+        if os.path.islink(name):
+            # Never chmod a symlink, as that would change the permissions of its target.
+            os.remove(name)
+        elif os.path.isdir(name):
+            # Directories need read and execute access to list and remove their contents.
+            os.chmod(name, stat.S_IRWXU)
+            shutil.rmtree(name, onerror=on_error)
+        else:
+            os.chmod(name, stat.S_IWRITE)
+            os.remove(name)
+
+    shutil.rmtree(path, onerror=on_error)
+
+
 def extract_zip(url: str, path: str | Path) -> None:
     """
     Extracts the zip at `url` to `path`.
@@ -136,12 +164,7 @@ def needs_update_or_installation(jdtls_version: str) -> bool:
 def install_or_update(jdtls_version: str) -> None:
     basedir = storage_subpath()
     if basedir.is_dir():
-        # Make writable before delete due to issue with latest jdt-*.tar.gz:
-        # https://github.com/sublimelsp/LSP-jdtls/pull/58
-        def del_rw(action, name, exc):
-            os.chmod(name, stat.S_IWRITE)
-            os.remove(name)
-        shutil.rmtree(basedir, onerror=del_rw)
+        remove_tree(basedir)
     basedir.mkdir(parents=True)
 
     # fmt: off

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import shutil
 from typing import TYPE_CHECKING
 
 import sublime
@@ -8,7 +7,7 @@ import sublime_plugin
 from LSP.plugin import Request, Session
 
 from .constants import SESSION_NAME
-from .installer import jdtls_data_path
+from .installer import jdtls_data_path, remove_tree
 from .utils import LspJdtlsTextCommand
 
 if TYPE_CHECKING:
@@ -46,7 +45,7 @@ class JdtlsClearData(sublime_plugin.TextCommand):
         if sublime.ok_cancel_dialog(
             f"Are you sure you want to clear {jdtls_data_path()}"
         ) and jdtls_data_path().exists():
-            shutil.rmtree(jdtls_data_path())
+            remove_tree(jdtls_data_path())
             self.view.run_command(
                 "lsp_restart_server", {"config_name": SESSION_NAME}
             )

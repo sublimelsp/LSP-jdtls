@@ -1,6 +1,48 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "github>sublimelsp/renovate-preset"
+    "github>sublimelsp/renovate-preset",
+    "github>sublimelsp/renovate-preset:automerge-server"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "The jdtls milestone that the plugin downloads from download.eclipse.org",
+      "managerFilePatterns": ["/^modules/constants\\.py$/"],
+      "matchStrings": ["JDTLS_VERSION = \"(?<currentValue>[^\"]+)\""],
+      "depNameTemplate": "jdtls",
+      "packageNameTemplate": "eclipse-jdtls/eclipse.jdt.ls",
+      "datasourceTemplate": "github-tags",
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^modules/constants\\.py$/"],
+      "matchStrings": ["LOMBOK_VERSION = \"(?<currentValue>[^\"]+)\""],
+      "depNameTemplate": "lombok",
+      "packageNameTemplate": "org.projectlombok:lombok",
+      "datasourceTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "description": "VS Code extensions that the plugin downloads from Open VSX, which has no Renovate datasource, so their GitHub tags are used",
+      "managerFilePatterns": ["/^modules/constants\\.py$/"],
+      "matchStrings": ["\"(?<depName>vscode-java-(?:debug|test))\": \\{\\s*\"url\": \"[^\"]*\",\\s*\"version\": \"(?<currentValue>[^\"]+)\""],
+      "packageNameTemplate": "microsoft/{{{depName}}}",
+      "datasourceTemplate": "github-tags"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "The test runner extension depends on jdtls, so update them together",
+      "matchPackageNames": ["eclipse-jdtls/eclipse.jdt.ls", "microsoft/vscode-java-debug", "microsoft/vscode-java-test"],
+      "groupName": "jdtls"
+    },
+    {
+      "description": "A jdtls update can break the test runner (see #77), which the smoke test doesn't cover, so only patch updates are automerged",
+      "matchPackageNames": ["eclipse-jdtls/eclipse.jdt.ls"],
+      "matchUpdateTypes": ["minor"],
+      "automerge": false
+    }
   ]
 }

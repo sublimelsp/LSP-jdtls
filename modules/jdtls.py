@@ -48,7 +48,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from LSP.plugin import ClientConfig
-    from LSP.protocol import ExecuteCommandParams
+    from LSP.protocol import DocumentUri, ExecuteCommandParams
 
 
 class EclipseJavaDevelopmentTools(LspPlugin):

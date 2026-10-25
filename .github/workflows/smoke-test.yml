@@ -9,20 +9,22 @@ on:
 
 jobs:
   smoke:
-    name: Smoke test (${{ matrix.os }})
+    name: Smoke test (${{ matrix.os }}, Java ${{ matrix.java }})
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        # The lowest Java version that jdtls runs on, and the latest LTS version.
+        java: ['21', '25']
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
 
-      # The language server needs Java 21 or newer, found through JAVA_HOME.
+      # The language server is started with the JDK in JAVA_HOME.
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: ${{ matrix.java }}
 
       - uses: sublimelsp/lsp_smoke_test@v1
 

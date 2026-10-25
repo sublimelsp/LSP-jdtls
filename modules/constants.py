@@ -1,7 +1,7 @@
 # fmt: off
 from __future__ import annotations
 
-LOMBOK_VERSION = "1.18.46"
+LOMBOK_VERSION = "1.18.48"
 LOMBOK_URL = "https://repo1.maven.org/maven2/org/projectlombok/lombok/{version}/lombok-{version}.jar"
 JDTLS_VERSION = "1.60.0"
 JDTLS_TAR_URL_FILE = "https://download.eclipse.org/jdtls/milestones/{version}/latest.txt"

@@ -16,6 +16,7 @@ from LSP.plugin import (
     Promise,
     Request,
     command_handler,
+    filename_to_uri,
     notification_handler,
     request_handler,
     text_document_identifier,
@@ -139,7 +140,7 @@ class EclipseJavaDevelopmentTools(LspPlugin):
             },
         )
 
-        # configuration.initialization_options.set("triggerFiles", configuration.settings)
+        configuration.initialization_options.set("triggerFiles", cls._trigger_files(context))
 
     @override
     def on_pre_send_response_async(self, response: ClientResponse) -> None:
@@ -164,6 +165,20 @@ class EclipseJavaDevelopmentTools(LspPlugin):
         window = context.view.window()
         project_file = window.project_file_name() if window else None
         return jdtls_workspace_data_path(project_file, [folder.path for folder in context.workspace_folders])
+
+    @classmethod
+    def _trigger_files(cls, context: OnPreStartContext) -> list[DocumentUri]:
+        """
+        The open java files, starting with the one that started the server.
+
+        jdtls only applies `java.project.referencedLibraries` to an existing project without
+        build files (an "invisible project") when it starts with one of its files as a trigger file.
+        """
+        window = context.view.window()
+        views = [context.view] + (window.views() if window else [])
+        file_names = [view.file_name() for view in views]
+        java_files = [name for name in file_names if name and name.endswith(".java")]
+        return [filename_to_uri(name) for name in dict.fromkeys(java_files)]
 
     @classmethod
     def _jdtls_version(cls, configuration: ClientConfig) -> str:

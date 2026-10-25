@@ -26,6 +26,12 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java }}
 
+      # On macOS, Sublime Text takes its environment from the login shell, where the runner sets JAVA_HOME to its
+      # default Java, so set it there too.
+      - name: Pass JAVA_HOME to Sublime Text
+        if: runner.os == 'macOS'
+        run: echo "export JAVA_HOME='$JAVA_HOME'" | tee -a ~/.bashrc ~/.zshrc
+
       - uses: sublimelsp/lsp_smoke_test@v1
 
   # A single check whose name doesn't depend on the os matrix, for rulesets to require. It runs even when the workflow

@@ -5,9 +5,14 @@
     "schemes": [
         // regular files on disk
         "file",
-        // opened by a DAP-compatible debugger
+        // class files from libraries and the JDK, and files opened by a
+        // DAP-compatible debugger
         "jdt"
     ],
+    // The syntax of the class files that jdtls shows for `jdt://` URIs.
+    "syntax_map": {
+        "jdt": "Packages/Java/Java.sublime-syntax"
+    },
     // The startup command.
     "command": [
         "${java_executable}",

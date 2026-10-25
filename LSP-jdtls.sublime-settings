@@ -52,6 +52,7 @@
     // The server-specific settings.
     "settings": {
         // Specifies the folder path to the JDK (25 or more recent) used to launch the Java Language Server.
+        // If not set, the JDK in the JAVA_HOME environment variable is used, and otherwise `java` from the PATH.
         "java.jdt.ls.java.home": null,
         // Set of classpath variable strings of the form: "name=path" that are used
         // to resolve classpath entries.

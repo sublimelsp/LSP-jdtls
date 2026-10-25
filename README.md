@@ -5,7 +5,7 @@ This is a helper package that manages and downloads the [Eclipse JDT language se
 To use this package, you must have:
 
 - The [LSP](https://packagecontrol.io/packages/LSP) package.
-- A Java SDK (>= 21).
+- A Java SDK (>= 25).
 - It's recommended to have `JAVA_HOME` defined in your environment variables. Otherwise, specify `java.home` in the plugin settings.
 - It's recommended to install [LSP-file-watcher-rust](https://packagecontrol.io/packages/LSP-file-watcher-rust). Without a file watcher, jdtls isn't notified about files changed outside of Sublime Text, for example build files updated by `git pull` or jars added to `lib/` (see `java.project.referencedLibraries`).
 

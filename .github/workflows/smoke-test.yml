@@ -14,8 +14,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        # The lowest Java version that jdtls runs on, and the latest LTS version.
-        java: ['21', '25']
+        # The lowest Java version that jdtls runs on, which is also the latest LTS version, and the latest version.
+        java: ['25', '27']
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
@@ -25,6 +25,12 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ matrix.java }}
+
+      # On macOS, Sublime Text takes its environment from the login shell, where the runner sets JAVA_HOME to its
+      # default Java, so set it there too.
+      - name: Pass JAVA_HOME to Sublime Text
+        if: runner.os == 'macOS'
+        run: echo "export JAVA_HOME='$JAVA_HOME'" | tee -a ~/.bashrc ~/.zshrc
 
       - uses: sublimelsp/lsp_smoke_test@v1
 

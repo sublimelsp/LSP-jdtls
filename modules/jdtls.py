@@ -3,27 +3,21 @@ from __future__ import annotations
 import json
 import os
 import re
-from functools import partial
 from typing import TYPE_CHECKING, Any
-from urllib.parse import urlparse
 
 import sublime
 from LSP.plugin import (
     ClientResponse,
-    Error,
     LspPlugin,
     OnPreStartContext,
     Promise,
-    Request,
     command_handler,
     filename_to_uri,
     notification_handler,
     request_handler,
-    text_document_identifier,
-    uri_handler,
 )
 from LSP.plugin.core.views import location_to_encoded_filename
-from LSP.protocol import LSPAny, TextDocumentIdentifier, WorkspaceEdit
+from LSP.protocol import LSPAny, WorkspaceEdit
 from typing_extensions import override
 
 from . import installer
@@ -224,32 +218,6 @@ class EclipseJavaDevelopmentTools(LspPlugin):
                     if abspath not in bundles:
                         bundles.append(abspath)
         configuration.initialization_options.set("bundles", bundles)
-
-    @uri_handler('jdt')
-    def on_handle_jdt_uri_async(self, uri: DocumentUri, flags: sublime.NewFileFlags) -> Promise[sublime.Sheet | None]:
-        if session := self.weaksession():
-            # https://github.com/redhat-developer/vscode-java/blob/9f32875a67352487f5c414bb7fef04c9b00af89d/src/protocol.ts#L105-L107
-            # https://github.com/redhat-developer/vscode-java/blob/9f32875a67352487f5c414bb7fef04c9b00af89d/src/providerDispatcher.ts#L61-L76
-            # https://github.com/redhat-developer/vscode-java/blob/9f32875a67352487f5c414bb7fef04c9b00af89d/src/providerDispatcher.ts#L27-L28
-            return session.send_request_task(
-                Request[TextDocumentIdentifier, str](
-                    "java/classFileContents", text_document_identifier(uri), progress=True
-                ),
-            ).then(partial(self.handle_class_file_contents, uri))
-        return Promise.resolve(None)
-
-    def handle_class_file_contents(self, uri: str, result: str | Error) -> Promise[sublime.Sheet | None]:
-        if session := self.weaksession():
-            if isinstance(result, Error):
-                title = "ERROR"
-                contents = str(result)
-                syntax = "Packages/Text/Plain text.tmLanguage"
-            else:
-                title = urlparse(uri).path
-                contents = result
-                syntax = "Packages/Java/Java.sublime-syntax"
-            return session.open_scratch_buffer(title, contents, syntax).then(lambda view: view.sheet())
-        return Promise.resolve(None)
 
     # Custom command handling
     #########################

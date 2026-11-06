@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Callable
 import sublime
 from LSP.plugin import Error, Session, first_selection_region, offset_to_position, parse_uri, uri_from_view
 from LSP.plugin.core.constants import KIND_CLASS, KIND_METHOD
-from LSP.plugin.core.edit import parse_workspace_edit
 from typing_extensions import override
 
 from .constants import SESSION_NAME
@@ -22,6 +21,7 @@ from .text_extension_protocol import (
 )
 from .utils import (
     LspJdtlsTextCommand,
+    first_edited_uri,
     flatten_test_items,
     open_and_focus_uri,
     sublime_debugger_available,
@@ -52,7 +52,7 @@ class LspJdtlsGenerateTests(LspJdtlsTextCommand):
                 print(workspace_edit)
                 return
 
-            parsed_worspace_edit = parse_workspace_edit(workspace_edit)
+            edited_uri = first_edited_uri(workspace_edit)
 
             def handle_apply_edit() -> None:
                 session.apply_workspace_edit_async(workspace_edit).then(
@@ -61,10 +61,8 @@ class LspJdtlsGenerateTests(LspJdtlsTextCommand):
 
             def open_changed_file() -> None:
                 window = self.view.window()
-                if window and parsed_worspace_edit:
-                    for uri in parsed_worspace_edit:
-                        open_and_focus_uri(window, uri)
-                        return
+                if window and edited_uri:
+                    open_and_focus_uri(window, edited_uri)
 
             sublime.set_timeout_async(handle_apply_edit)
 

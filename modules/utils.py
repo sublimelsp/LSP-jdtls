@@ -9,6 +9,8 @@ from typing_extensions import override
 from .constants import SESSION_NAME, SETTINGS_FILENAME
 
 if TYPE_CHECKING:
+    from LSP.protocol import DocumentUri, WorkspaceEdit
+
     from .text_extension_protocol import IJavaTestItem
 
 
@@ -46,6 +48,17 @@ def open_and_focus_uri(window: sublime.Window, uri: str) -> None:
     # Replace that with session.open_uri_async once that does also focus an open view.
     _, file_name = parse_uri(uri)
     window.open_file(file_name)
+
+
+def first_edited_uri(workspace_edit: WorkspaceEdit) -> DocumentUri | None:
+    """Return the URI of the first document that the workspace edit changes, ignoring file operations."""
+    document_changes = workspace_edit.get('documentChanges')
+    if isinstance(document_changes, list):
+        for change in document_changes:
+            if 'kind' not in change and change.get('edits'):
+                return change['textDocument']['uri']
+        return None
+    return next(iter(workspace_edit.get('changes') or {}), None)
 
 
 def flatten_test_items(test_items: list[IJavaTestItem]) -> list[IJavaTestItem]:

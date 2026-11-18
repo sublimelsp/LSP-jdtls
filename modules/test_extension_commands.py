@@ -5,10 +5,9 @@ from typing import TYPE_CHECKING, Callable
 
 import sublime
 from LSP.plugin import Error, Session, first_selection_region, offset_to_position, parse_uri, uri_from_view
-from LSP.plugin.core.constants import KIND_CLASS, KIND_METHOD
 from typing_extensions import override
 
-from .constants import SESSION_NAME
+from .constants import KIND_CLASS, KIND_METHOD, SESSION_NAME
 from .installer import vscode_plugin_path
 from .quick_input_panel import QuickSelect, SelectableItem
 from .test_extension_server import JunitResultsServer, TestNgResultsServer

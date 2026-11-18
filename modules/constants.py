@@ -1,6 +1,8 @@
 # fmt: off
 from __future__ import annotations
 
+import sublime
+
 LOMBOK_VERSION = "1.18.48"
 LOMBOK_URL = "https://repo1.maven.org/maven2/org/projectlombok/lombok/{version}/lombok-{version}.jar"
 JDTLS_VERSION = "1.63.0"
@@ -40,5 +42,8 @@ JDTLS_CONFIG_TO_SUBLIME_SETTING = {
     "java.format.insertSpaces": "translate_tabs_to_spaces"
 }
 """ Config dict for workspace/configuration requests. """
+
+KIND_CLASS = (sublime.KindId.TYPE, "c", "Class")
+KIND_METHOD = (sublime.KindId.FUNCTION, "m", "Method")
 
 # fmt: on

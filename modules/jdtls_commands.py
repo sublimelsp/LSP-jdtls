@@ -11,7 +11,7 @@ from .installer import jdtls_workspace_data_path, remove_tree
 from .utils import LspJdtlsTextCommand
 
 if TYPE_CHECKING:
-    from LSP.plugin.core.protocol import ResponseError
+    from LSP.plugin import ResponseError
 
 
 class LspJdtlsBuildWorkspace(LspJdtlsTextCommand):
